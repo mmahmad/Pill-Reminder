@@ -10,7 +10,7 @@
         },
         "interactionModel": {
           "en-US": {
-            "eTag": "1f648115a3c0efa5ef22ce9d4cd4d77b"
+            "eTag": "9a98baa0218c0c5f342c150c094c8e54"
           }
         },
         "lambda": [
@@ -23,7 +23,7 @@
             "codeUri": "lambda/custom",
             "functionName": "ask-reminders-demo",
             "handler": "index.handler",
-            "revisionId": "50d1d3b2-5b59-4458-b653-3cdc24512575",
+            "revisionId": "ae3ea5ae-024b-4b56-9cb2-d9f6eda93802",
             "runtime": "nodejs8.10"
           }
         ]

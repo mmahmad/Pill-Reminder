@@ -9,7 +9,7 @@ const messages = {
   GOODBYE: 'Bye! Thanks for using the Reminders API Skill!',
   UNHANDLED: 'This skill doesn\'t support that. Please ask something else.',
   HELP: 'You can use this skill by asking something like: create a reminder?',
-  REMINDER_CREATED: 'OK, I will remind you in 30 seconds.',
+  REMINDER_CREATED: 'OK, I will remind you.',
   UNSUPPORTED_DEVICE: 'Sorry, this device doesn\'t support reminders.',
   WELCOME_REMINDER_COUNT: 'Welcome to the Reminders API Demo Skill.  The number of your reminders related to this skill is ',
   NO_REMINDER: 'OK, I won\'t remind you.',
@@ -78,12 +78,33 @@ const AddNewPillHandler = {
     const responseBuilder = handlerInput.responseBuilder;
     const consentToken = requestEnvelope.context.System.apiAccessToken;
 
-    // if (!consentToken) {
-    //   return responseBuilder
-    //     .speak(messages.NOTIFY_MISSING_PERMISSIONS)
-    //     .withAskForPermissionsConsentCard(PERMISSIONS)
-    //     .getResponse();
-    // }
+    // check for confirmation.  if not confirmed, delegate
+    switch (requestEnvelope.request.intent.confirmationStatus) {
+      case 'CONFIRMED':
+        // intent is confirmed, so continue
+        console.log('Alexa confirmed intent, so clear to create reminder');
+        break;
+      case 'DENIED':
+        // intent was explicitly not confirmed, so skip creating the reminder
+        console.log('Alexa disconfirmed the intent; not creating reminder');
+        return responseBuilder
+          .speak(`${messages.NO_REMINDER} ${messages.WHAT_DO_YOU_WANT}`)
+          .reprompt(messages.WHAT_DO_YOU_WANT)
+          .getResponse();
+      case 'NONE':
+      default:
+        console.log('delegate back to Alexa to get confirmation');
+        return responseBuilder
+          .addDelegateDirective()
+          .getResponse();
+    }
+
+    if (!consentToken) {
+      return responseBuilder
+        .speak(messages.NOTIFY_MISSING_PERMISSIONS)
+        .withAskForPermissionsConsentCard(PERMISSIONS)
+        .getResponse();
+    }
     const currentIntent = handlerInput.requestEnvelope.request.intent;
     let prompt = '';
     console.log("Before extracting slot");
@@ -91,12 +112,50 @@ const AddNewPillHandler = {
     console.log(handlerInput.requestEnvelope.request.intent)
     var colorName = handlerInput.requestEnvelope.request.intent.slots.Color.value;
     var time = handlerInput.requestEnvelope.request.intent.slots.time.value;
-    var day = handlerInput.requestEnvelope.request.intent.slots.day.value;
+    var date = handlerInput.requestEnvelope.request.intent.slots.date.value;
+
+    var reminderText = `time to take your ${colorName} pill.`;
     
+    try {
+      const client = handlerInput.serviceClientFactory.getReminderManagementServiceClient();
+
+      const reminderRequest = {
+        trigger: {
+          // type: 'SCHEDULED_RELATIVE',
+          // offsetInSeconds: '30',
+          type: 'SCHEDULED_ABSOLUTE',
+          scheduledTime : `${date}T${time}`,
+        },
+        alertInfo: {
+          spokenInfo: {
+            content: [{
+              locale: 'en-US',
+              text: reminderText,
+            }],
+          },
+        },
+        pushNotification: {
+          status: 'ENABLED',
+        },
+      };
+      const reminderResponse = await client.createReminder(reminderRequest);
+      console.log(JSON.stringify(reminderResponse));
+    } catch (error) {
+      if (error.name !== 'ServiceError') {
+        console.log(`error: ${error.stack}`);
+        const response = responseBuilder.speak(messages.ERROR).getResponse();
+        return response;
+      }
+      throw error;
+    }
 
     return responseBuilder
-    .speak("You said to add a " + colorName + " pill reminder at " + time + " on " + day)
+    .speak(messages.REMINDER_CREATED)
     .getResponse();
+
+    // return responseBuilder
+    // .speak("You said to add a " + colorName + " pill reminder at " + time + " on " + day)
+    // .getResponse();
     // for (const slotName of Object.keys(handlerInput.requestEnvelope.request.intent.slots)) {
     //   const currentSlot = currentIntent.slots[slotName];
 

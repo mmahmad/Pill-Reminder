@@ -40,13 +40,15 @@
                             "type": "AMAZON.TIME"
                         },
                         {
-                            "name": "day",
-                            "type": "AMAZON.DayOfWeek"
+                            "name": "date",
+                            "type": "AMAZON.DATE"
                         }
                     ],
                     "samples": [
-                        "Add {Color} at {time} on {day}",
-                        "Insert {Color} at {time} on {day}"
+                        "Add {Color} at {date} at {time}",
+                        "Add {Color} {date} {time}",
+                        "Add {Color} {date} at {time}",
+                        "Add {Color} on {date} at {time}"
                     ]
                 }
             ],
@@ -64,8 +66,10 @@
                 },
                 {
                     "name": "AddNewPillIntent",
-                    "confirmationRequired": false,
-                    "prompts": {},
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.592920926865"
+                    },
                     "slots": [
                         {
                             "name": "Color",
@@ -84,8 +88,8 @@
                             "prompts": {}
                         },
                         {
-                            "name": "day",
-                            "type": "AMAZON.DayOfWeek",
+                            "name": "date",
+                            "type": "AMAZON.DATE",
                             "confirmationRequired": false,
                             "elicitationRequired": false,
                             "prompts": {}
@@ -120,6 +124,15 @@
                     {
                         "type": "PlainText",
                         "value": "What time would you like the reminder to be set for?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.592920926865",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Would you like me to remind you to take the {Color} pill at {time} on {date} ?"
                     }
                 ]
             }
