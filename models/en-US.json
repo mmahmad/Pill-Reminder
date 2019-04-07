@@ -4,15 +4,6 @@
             "invocationName": "reminder demo",
             "intents": [
                 {
-                    "name": "CreateReminderIntent",
-                    "slots": [],
-                    "samples": [
-                        "set a reminder",
-                        "create a reminder",
-                        "new reminder"
-                    ]
-                },
-                {
                     "name": "AMAZON.CancelIntent",
                     "samples": []
                 },
@@ -45,10 +36,10 @@
                         }
                     ],
                     "samples": [
-                        "Add {Color} at {date} at {time}",
-                        "Add {Color} {date} {time}",
-                        "Add {Color} {date} at {time}",
-                        "Add {Color} on {date} at {time}"
+                        "set reminder for {Color} at {date} at {time}",
+                        "set reminder for {Color} {date} {time}",
+                        "set reminder for {Color} {date} at {time}",
+                        "set reminder for {Color} on {date} at {time}"
                     ]
                 }
             ],
@@ -56,14 +47,6 @@
         },
         "dialog": {
             "intents": [
-                {
-                    "name": "CreateReminderIntent",
-                    "confirmationRequired": true,
-                    "prompts": {
-                        "confirmation": "ConfirmCreateReminderIntent"
-                    },
-                    "slots": []
-                },
                 {
                     "name": "AddNewPillIntent",
                     "confirmationRequired": true,
