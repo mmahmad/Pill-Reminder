@@ -68,6 +68,42 @@ const LaunchRequestHandler = {
   },
 };
 
+const AddNewPillHandler = {
+  canHandle(handlerInput) {
+    const request = handlerInput.requestEnvelope.request;
+    return request.type === 'IntentRequest' && request.intent.name === 'AddNewPillIntent';
+  },
+  async handle(handlerInput) {
+    const requestEnvelope = handlerInput.requestEnvelope;
+    const responseBuilder = handlerInput.responseBuilder;
+    const consentToken = requestEnvelope.context.System.apiAccessToken;
+
+    // if (!consentToken) {
+    //   return responseBuilder
+    //     .speak(messages.NOTIFY_MISSING_PERMISSIONS)
+    //     .withAskForPermissionsConsentCard(PERMISSIONS)
+    //     .getResponse();
+    // }
+    const currentIntent = handlerInput.requestEnvelope.request.intent;
+    let prompt = '';
+    console.log("Before extracting slot");
+    console.log("handlerInput:");
+    console.log(handlerInput);
+    var colorName = handlerInput.requestEnvelope.request.intent.slots.Color.value;
+    
+
+    return responseBuilder
+    .speak("You said to add a " + colorName + " pill.")
+    .getResponse();
+    // for (const slotName of Object.keys(handlerInput.requestEnvelope.request.intent.slots)) {
+    //   const currentSlot = currentIntent.slots[slotName];
+
+    // }
+
+
+  }
+};
+
 const CreateReminderHandler = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
@@ -238,6 +274,7 @@ exports.handler = skillBuilder
   .addRequestHandlers(
     LaunchRequestHandler,
     CreateReminderHandler,
+    AddNewPillHandler,
     SessionEndedRequestHandler,
     HelpHandler,
     CancelStopHandler,

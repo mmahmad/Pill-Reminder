@@ -1,58 +1,97 @@
 {
-  "interactionModel": {
-      "languageModel": {
-          "invocationName": "reminder demo",
-          "intents": [
-              {
-                  "name": "CreateReminderIntent",
-                  "slots": [],
-                  "samples": [
-                      "set a reminder",
-                      "create a reminder",
-                      "new reminder"
-                  ]
-              },
-              {
-                  "name": "AMAZON.CancelIntent",
-                  "samples": []
-              },
-              {
-                  "name": "AMAZON.HelpIntent",
-                  "samples": []
-              },
-              {
-                  "name": "AMAZON.StopIntent",
-                  "samples": []
-              },
-              {
-                  "name": "AMAZON.NavigateHomeIntent",
-                  "samples": []
-              }
-          ],
-          "types": []
-      },
-      "dialog": {
-          "intents": [
-              {
-                  "name": "CreateReminderIntent",
-                  "confirmationRequired": true,
-                  "prompts": {
-                      "confirmation": "ConfirmCreateReminderIntent"
-                  },
-                  "slots": []
-              }
-          ]
-      },
-      "prompts": [
-          {
-              "id": "ConfirmCreateReminderIntent",
-              "variations": [
-                  {
-                      "type": "PlainText",
-                      "value": "Would you like me to remind you in thirty seconds to get up and dance?"
-                  }
-              ]
-          }
-      ]
-  }
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "reminder demo",
+            "intents": [
+                {
+                    "name": "CreateReminderIntent",
+                    "slots": [],
+                    "samples": [
+                        "set a reminder",
+                        "create a reminder",
+                        "new reminder"
+                    ]
+                },
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AddNewPillIntent",
+                    "slots": [
+                        {
+                            "name": "Color",
+                            "type": "AMAZON.Color"
+                        }
+                    ],
+                    "samples": [
+                        "Insert {Color}",
+                        "Add {Color}"
+                    ]
+                }
+            ],
+            "types": []
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "CreateReminderIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "ConfirmCreateReminderIntent"
+                    },
+                    "slots": []
+                },
+                {
+                    "name": "AddNewPillIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "Color",
+                            "type": "AMAZON.Color",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.592920926865.1025523345932"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "delegationStrategy": "SKILL_RESPONSE"
+        },
+        "prompts": [
+            {
+                "id": "ConfirmCreateReminderIntent",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Would you like me to remind you in thirty seconds to get up and dance?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.592920926865.1025523345932",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please say the color of the pill"
+                    }
+                ]
+            }
+        ]
+    }
 }
