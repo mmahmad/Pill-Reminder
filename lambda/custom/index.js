@@ -87,13 +87,15 @@ const AddNewPillHandler = {
     const currentIntent = handlerInput.requestEnvelope.request.intent;
     let prompt = '';
     console.log("Before extracting slot");
-    console.log("handlerInput:");
-    console.log(handlerInput);
+    console.log("handlerInput.requestEnvelope.request.intent:");
+    console.log(handlerInput.requestEnvelope.request.intent)
     var colorName = handlerInput.requestEnvelope.request.intent.slots.Color.value;
+    var time = handlerInput.requestEnvelope.request.intent.slots.time.value;
+    var day = handlerInput.requestEnvelope.request.intent.slots.day.value;
     
 
     return responseBuilder
-    .speak("You said to add a " + colorName + " pill.")
+    .speak("You said to add a " + colorName + " pill reminder at " + time + " on " + day)
     .getResponse();
     // for (const slotName of Object.keys(handlerInput.requestEnvelope.request.intent.slots)) {
     //   const currentSlot = currentIntent.slots[slotName];

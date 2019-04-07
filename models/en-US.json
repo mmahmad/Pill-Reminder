@@ -34,11 +34,19 @@
                         {
                             "name": "Color",
                             "type": "AMAZON.Color"
+                        },
+                        {
+                            "name": "time",
+                            "type": "AMAZON.TIME"
+                        },
+                        {
+                            "name": "day",
+                            "type": "AMAZON.DayOfWeek"
                         }
                     ],
                     "samples": [
-                        "Insert {Color}",
-                        "Add {Color}"
+                        "Add {Color} at {time} on {day}",
+                        "Insert {Color} at {time} on {day}"
                     ]
                 }
             ],
@@ -67,6 +75,20 @@
                             "prompts": {
                                 "elicitation": "Elicit.Slot.592920926865.1025523345932"
                             }
+                        },
+                        {
+                            "name": "time",
+                            "type": "AMAZON.TIME",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "day",
+                            "type": "AMAZON.DayOfWeek",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
                         }
                     ]
                 }
@@ -89,6 +111,15 @@
                     {
                         "type": "PlainText",
                         "value": "Please say the color of the pill"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.592920926865.1037813055729",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What time would you like the reminder to be set for?"
                     }
                 ]
             }
