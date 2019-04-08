@@ -114,30 +114,66 @@ const AddNewPillHandler = {
     var time = handlerInput.requestEnvelope.request.intent.slots.time.value;
     var date = handlerInput.requestEnvelope.request.intent.slots.date.value;
 
+    var frequency = handlerInput.requestEnvelope.request.intent.slots.frequency.value;
+    var day = handlerInput.requestEnvelope.request.intent.slots.frequency.value;
+
     var reminderText = `time to take your ${colorName} pill.`;
     
     try {
       const client = handlerInput.serviceClientFactory.getReminderManagementServiceClient();
+      var reminderRequest = {};
 
-      const reminderRequest = {
-        trigger: {
-          // type: 'SCHEDULED_RELATIVE',
-          // offsetInSeconds: '30',
-          type: 'SCHEDULED_ABSOLUTE',
-          scheduledTime : `${date}T${time}`,
-        },
-        alertInfo: {
-          spokenInfo: {
-            content: [{
-              locale: 'en-US',
-              text: reminderText,
-            }],
+      // for recurring
+      if (frequency !== null) {
+        reminderRequest = {
+          trigger: {
+            // type: 'SCHEDULED_RELATIVE',
+            // offsetInSeconds: '30',
+            type: 'SCHEDULED_ABSOLUTE',
+            scheduledTime : `${date}T${time}`,
+            recurrence: {
+              "freq": `${frequency}`,
+              "byDay": [
+                day
+              ],
+              "interval": 0
+            }
           },
-        },
-        pushNotification: {
-          status: 'ENABLED',
-        },
-      };
+          alertInfo: {
+            spokenInfo: {
+              content: [{
+                locale: 'en-US',
+                text: reminderText,
+              }],
+            },
+          },
+          pushNotification: {
+            status: 'ENABLED',
+          },
+        };
+      } else {
+        // non-recurring
+        reminderRequest = {
+          trigger: {
+            // type: 'SCHEDULED_RELATIVE',
+            // offsetInSeconds: '30',
+            type: 'SCHEDULED_ABSOLUTE',
+            scheduledTime : `${date}T${time}`,
+          },
+          alertInfo: {
+            spokenInfo: {
+              content: [{
+                locale: 'en-US',
+                text: reminderText,
+              }],
+            },
+          },
+          pushNotification: {
+            status: 'ENABLED',
+          },
+        };
+      }
+
       const reminderResponse = await client.createReminder(reminderRequest);
       console.log(JSON.stringify(reminderResponse));
     } catch (error) {

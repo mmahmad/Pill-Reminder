@@ -33,9 +33,23 @@
                         {
                             "name": "date",
                             "type": "AMAZON.DATE"
+                        },
+                        {
+                            "name": "frequency",
+                            "type": "FREQUENCY"
+                        },
+                        {
+                            "name": "day",
+                            "type": "AMAZON.DayOfWeek"
                         }
                     ],
                     "samples": [
+                        "set reminder for {Color} {frequency} on {day} at {time}",
+                        "set reminder to take {Color} {frequency} on {day} at {time}",
+                        "set reminder to take {Color} {date} {time}",
+                        "set reminder to take {Color} at {date} at {time}",
+                        "set reminder to take {Color} {frequency} at {time}",
+                        "set reminder for {Color} {frequency} at {time}",
                         "set reminder for {Color} at {date} at {time}",
                         "set reminder for {Color} {date} {time}",
                         "set reminder for {Color} {date} at {time}",
@@ -43,7 +57,29 @@
                     ]
                 }
             ],
-            "types": []
+            "types": [
+                {
+                    "name": "FREQUENCY",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "DAILY",
+                                "synonyms": [
+                                    "every day"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "WEEKLY",
+                                "synonyms": [
+                                    "every week"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         },
         "dialog": {
             "intents": [
@@ -73,6 +109,20 @@
                         {
                             "name": "date",
                             "type": "AMAZON.DATE",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "frequency",
+                            "type": "FREQUENCY",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "day",
+                            "type": "AMAZON.DayOfWeek",
                             "confirmationRequired": false,
                             "elicitationRequired": false,
                             "prompts": {}
