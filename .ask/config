@@ -23,7 +23,7 @@
             "codeUri": "lambda/custom",
             "functionName": "ask-reminders-demo",
             "handler": "index.handler",
-            "revisionId": "7c6a2c0c-7b7e-484a-ad7d-de3540c9bcd7",
+            "revisionId": "0d0f723c-a9da-4a42-9644-fa1abcd405fe",
             "runtime": "nodejs8.10"
           }
         ]
