@@ -27,12 +27,23 @@
                             "type": "AMAZON.Color"
                         },
                         {
+                            "name": "date",
+                            "type": "AMAZON.DATE"
+                        },
+                        {
                             "name": "time",
                             "type": "AMAZON.TIME"
                         },
                         {
-                            "name": "date",
-                            "type": "AMAZON.DATE"
+                            "name": "yesOrNo",
+                            "type": "yesOrNo",
+                            "samples": [
+                                "{yesOrNo}"
+                            ]
+                        },
+                        {
+                            "name": "frequency",
+                            "type": "frequency"
                         }
                     ],
                     "samples": [
@@ -43,7 +54,57 @@
                     ]
                 }
             ],
-            "types": []
+            "types": [
+                {
+                    "name": "yesOrNo",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "no",
+                                "synonyms": [
+                                    "no thank you",
+                                    "I do not",
+                                    "nope",
+                                    "no"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "yes",
+                                "synonyms": [
+                                    "you know it",
+                                    "yes please",
+                                    "I do",
+                                    "yeah",
+                                    "yep"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "frequency",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "daily",
+                                "synonyms": [
+                                    "every day"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "weekly",
+                                "synonyms": [
+                                    "every week"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         },
         "dialog": {
             "intents": [
@@ -64,6 +125,13 @@
                             }
                         },
                         {
+                            "name": "date",
+                            "type": "AMAZON.DATE",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
                             "name": "time",
                             "type": "AMAZON.TIME",
                             "confirmationRequired": false,
@@ -71,8 +139,17 @@
                             "prompts": {}
                         },
                         {
-                            "name": "date",
-                            "type": "AMAZON.DATE",
+                            "name": "yesOrNo",
+                            "type": "yesOrNo",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1534367745917.1109411938100"
+                            }
+                        },
+                        {
+                            "name": "frequency",
+                            "type": "frequency",
                             "confirmationRequired": false,
                             "elicitationRequired": false,
                             "prompts": {}
@@ -115,7 +192,24 @@
                 "variations": [
                     {
                         "type": "PlainText",
+                        "value": "Would you like me to remind you to take the {Color} pill {frequency} at {time}"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Would you like me to remind you to take the {Color} pill?"
+                    },
+                    {
+                        "type": "PlainText",
                         "value": "Would you like me to remind you to take the {Color} pill at {time} on {date} ?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1534367745917.1109411938100",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Do you want this reminder to repeat?"
                     }
                 ]
             }

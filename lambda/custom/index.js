@@ -68,6 +68,58 @@ const LaunchRequestHandler = {
   },
 };
 
+// const StartedInProgressReminderIntentHandler = {
+//   canHandle(handlerInput) {
+//     return handlerInput.requestEnvelope.request.type === "IntentRequest"
+//       && handlerInput.requestEnvelope.request.intent.name === "AddNewPillIntent"
+//       && handlerInput.requestEnvelope.request.dialogState !== 'COMPLETED';
+//   },
+//   handle(handlerInput) {
+//     console.log("StartedInProgressReminderIntentHandler called");
+//     return handlerInput.responseBuilder
+//       .addDelegateDirective()
+//       .getResponse();
+//   }
+// }
+
+// const frequencyGivenRepeatHandler = {
+//   canHandle(handlerInput) {
+//     return handlerInput.requestEnvelope.request.type === "IntentRequest"
+//       && handlerInput.requestEnvelope.request.intent.name === "AddNewPillIntent"
+//       && handlerInput.requestEnvelope.request.dialogState !== 'COMPLETED';
+//   }, handle(handlerInput) {
+//     console.log("frequencyGivenRepeatHandler called");
+//     return handlerInput.responseBuilder
+//     .speak('Would you like this reminder to repeat daily or weekly?')
+//     .reprompt('Would you like this reminder to repeat daily or weekly?')
+//     .addElicitSlotDirective('frequency')
+//     .getResponse();
+//   }
+// };
+
+const frequencyGivenRepeatHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === "IntentRequest"
+    && handlerInput.requestEnvelope.request.intent.name === "AddNewPillIntent"
+    && handlerInput.requestEnvelope.request.intent.slots.Color.value
+    && handlerInput.requestEnvelope.request.intent.slots.date.value 
+    && handlerInput.requestEnvelope.request.intent.slots.time.value
+    && handlerInput.requestEnvelope.request.intent.slots.yesOrNo.value 
+    && handlerInput.requestEnvelope.request.intent.slots.yesOrNo.value === "yes"
+    && !handlerInput.requestEnvelope.request.intent.slots.frequency.value
+    && handlerInput.requestEnvelope.request.dialogState !== 'COMPLETED'
+  }, handle(handlerInput) {
+    console.log("frequencyGivenRepeatHandler called");
+    return handlerInput.responseBuilder
+    .speak('Would you like this to repeat daily, or weekly?')
+    .reprompt('Would you like this to repeat daily, or weekly?')
+    .addElicitSlotDirective('frequency')
+    .getResponse();
+  }
+};
+
+
+
 const AddNewPillHandler = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
@@ -77,6 +129,10 @@ const AddNewPillHandler = {
     const requestEnvelope = handlerInput.requestEnvelope;
     const responseBuilder = handlerInput.responseBuilder;
     const consentToken = requestEnvelope.context.System.apiAccessToken;
+
+    console.log("Before extracting slot");
+    console.log("handlerInput.requestEnvelope.request.intent:");
+    console.log(handlerInput.requestEnvelope.request.intent)
 
     // check for confirmation.  if not confirmed, delegate
     switch (requestEnvelope.request.intent.confirmationStatus) {
@@ -107,9 +163,6 @@ const AddNewPillHandler = {
     }
     const currentIntent = handlerInput.requestEnvelope.request.intent;
     let prompt = '';
-    console.log("Before extracting slot");
-    console.log("handlerInput.requestEnvelope.request.intent:");
-    console.log(handlerInput.requestEnvelope.request.intent)
     var colorName = handlerInput.requestEnvelope.request.intent.slots.Color.value;
     var time = handlerInput.requestEnvelope.request.intent.slots.time.value;
     var date = handlerInput.requestEnvelope.request.intent.slots.date.value;
@@ -118,26 +171,60 @@ const AddNewPillHandler = {
     
     try {
       const client = handlerInput.serviceClientFactory.getReminderManagementServiceClient();
+      var reminderRequest = {};
 
-      const reminderRequest = {
-        trigger: {
-          // type: 'SCHEDULED_RELATIVE',
-          // offsetInSeconds: '30',
-          type: 'SCHEDULED_ABSOLUTE',
-          scheduledTime : `${date}T${time}`,
-        },
-        alertInfo: {
-          spokenInfo: {
-            content: [{
-              locale: 'en-US',
-              text: reminderText,
-            }],
+      if (handlerInput.requestEnvelope.request.intent.slots.yesOrNo.value === "no") {
+        reminderRequest = {
+          trigger: {
+            // type: 'SCHEDULED_RELATIVE',
+            // offsetInSeconds: '30',
+            type: 'SCHEDULED_ABSOLUTE',
+            scheduledTime : `${date}T${time}`,
           },
-        },
-        pushNotification: {
-          status: 'ENABLED',
-        },
-      };
+          alertInfo: {
+            spokenInfo: {
+              content: [{
+                locale: 'en-US',
+                text: reminderText,
+              }],
+            },
+          },
+          pushNotification: {
+            status: 'ENABLED',
+          },
+        };
+      } else {
+        reminderRequest = {
+          trigger: {
+            type: 'SCHEDULED_ABSOLUTE',
+            scheduledTime : `${date}T${time}`,
+            recurrence : {                     
+              freq : handlerInput.requestEnvelope.request.intent.slots.frequency.value.toUpperCase()
+            }
+          },
+          alertInfo: {
+            spokenInfo: {
+              content: [{
+                locale: 'en-US',
+                text: reminderText,
+              }],
+            },
+          },
+          pushNotification: {
+            status: 'ENABLED',
+          },
+        };
+
+        // If recurrence is weekly, add the days of the week.
+        // TODO: Implement slot to take in the days of the week for weekly reminders.
+        if (reminderRequest.trigger.recurrence.freq === "WEEKLY") {
+          reminderRequest.trigger.recurrence.byDay = ["MO"];
+        }
+      }
+
+      console.log("final reminderRequest:");
+      console.log(reminderRequest);
+
       const reminderResponse = await client.createReminder(reminderRequest);
       console.log(JSON.stringify(reminderResponse));
     } catch (error) {
@@ -176,25 +263,25 @@ const CreateReminderHandler = {
     const consentToken = requestEnvelope.context.System.apiAccessToken;
 
     // check for confirmation.  if not confirmed, delegate
-    switch (requestEnvelope.request.intent.confirmationStatus) {
-      case 'CONFIRMED':
-        // intent is confirmed, so continue
-        console.log('Alexa confirmed intent, so clear to create reminder');
-        break;
-      case 'DENIED':
-        // intent was explicitly not confirmed, so skip creating the reminder
-        console.log('Alexa disconfirmed the intent; not creating reminder');
-        return responseBuilder
-          .speak(`${messages.NO_REMINDER} ${messages.WHAT_DO_YOU_WANT}`)
-          .reprompt(messages.WHAT_DO_YOU_WANT)
-          .getResponse();
-      case 'NONE':
-      default:
-        console.log('delegate back to Alexa to get confirmation');
-        return responseBuilder
-          .addDelegateDirective()
-          .getResponse();
-    }
+    // switch (requestEnvelope.request.intent.confirmationStatus) {
+    //   case 'CONFIRMED':
+    //     // intent is confirmed, so continue
+    //     console.log('Alexa confirmed intent, so clear to create reminder');
+    //     break;
+    //   case 'DENIED':
+    //     // intent was explicitly not confirmed, so skip creating the reminder
+    //     console.log('Alexa disconfirmed the intent; not creating reminder');
+    //     return responseBuilder
+    //       .speak(`${messages.NO_REMINDER} ${messages.WHAT_DO_YOU_WANT}`)
+    //       .reprompt(messages.WHAT_DO_YOU_WANT)
+    //       .getResponse();
+    //   case 'NONE':
+    //   default:
+    //     console.log('delegate back to Alexa to get confirmation');
+    //     return responseBuilder
+    //       .addDelegateDirective()
+    //       .getResponse();
+    // }
 
     if (!consentToken) {
       return responseBuilder
@@ -335,6 +422,8 @@ exports.handler = skillBuilder
   .addRequestHandlers(
     LaunchRequestHandler,
     CreateReminderHandler,
+    // StartedInProgressReminderIntentHandler,
+    frequencyGivenRepeatHandler,
     AddNewPillHandler,
     SessionEndedRequestHandler,
     HelpHandler,
