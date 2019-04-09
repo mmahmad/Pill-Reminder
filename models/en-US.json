@@ -192,15 +192,11 @@
                 "variations": [
                     {
                         "type": "PlainText",
+                        "value": "You have asked to set a reminder to take the {Color} pill at {time}  on {date} . Is that correct?"
+                    },
+                    {
+                        "type": "PlainText",
                         "value": "Would you like me to remind you to take the {Color} pill {frequency} at {time}"
-                    },
-                    {
-                        "type": "PlainText",
-                        "value": "Would you like me to remind you to take the {Color} pill?"
-                    },
-                    {
-                        "type": "PlainText",
-                        "value": "Would you like me to remind you to take the {Color} pill at {time} on {date} ?"
                     }
                 ]
             },
