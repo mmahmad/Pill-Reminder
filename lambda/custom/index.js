@@ -118,6 +118,27 @@ const frequencyGivenRepeatHandler = {
   }
 };
 
+const dayGivenWeeklyFrequencyHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === "IntentRequest"
+    && handlerInput.requestEnvelope.request.intent.name === "AddNewPillIntent"
+    && handlerInput.requestEnvelope.request.intent.slots.Color.value
+    && handlerInput.requestEnvelope.request.intent.slots.date.value 
+    && handlerInput.requestEnvelope.request.intent.slots.time.value
+    && handlerInput.requestEnvelope.request.intent.slots.yesOrNo.value 
+    && handlerInput.requestEnvelope.request.intent.slots.yesOrNo.value === "yes"
+    && handlerInput.requestEnvelope.request.intent.slots.frequency.value === "weekly"
+    && !handlerInput.requestEnvelope.request.intent.slots.day.value
+    && handlerInput.requestEnvelope.request.dialogState !== 'COMPLETED'
+  }, handle(handlerInput) {
+    console.log("dayGivenWeeklyFrequencyHandler called");
+    return handlerInput.responseBuilder
+    .speak('What days would you like this to repeat on?')
+    .reprompt('What days would you like this to repeat on?')
+    .addElicitSlotDirective('day')
+    .getResponse();
+  }
+};
 
 
 const AddNewPillHandler = {
@@ -171,6 +192,7 @@ const AddNewPillHandler = {
     
     try {
       const client = handlerInput.serviceClientFactory.getReminderManagementServiceClient();
+      var reminderRequests = Array();
       var reminderRequest = {};
 
       if (handlerInput.requestEnvelope.request.intent.slots.yesOrNo.value === "no") {
@@ -179,25 +201,27 @@ const AddNewPillHandler = {
             // type: 'SCHEDULED_RELATIVE',
             // offsetInSeconds: '30',
             type: 'SCHEDULED_ABSOLUTE',
-            scheduledTime : `${date}T${time}`,
+            scheduledTime : `${date}T${time}:00.000`
           },
           alertInfo: {
             spokenInfo: {
               content: [{
                 locale: 'en-US',
-                text: reminderText,
-              }],
-            },
+                text: reminderText
+              }]
+            }
           },
           pushNotification: {
-            status: 'ENABLED',
-          },
+            status: 'ENABLED'
+          }
         };
+        // add reminderRequest to reminderRequests array
+        reminderRequests.push(reminderRequest);
       } else {
         reminderRequest = {
           trigger: {
             type: 'SCHEDULED_ABSOLUTE',
-            scheduledTime : `${date}T${time}`,
+            scheduledTime : `${date}T${time}:00.000`,
             recurrence : {                     
               freq : handlerInput.requestEnvelope.request.intent.slots.frequency.value.toUpperCase()
             }
@@ -206,34 +230,99 @@ const AddNewPillHandler = {
             spokenInfo: {
               content: [{
                 locale: 'en-US',
-                text: reminderText,
-              }],
-            },
+                text: reminderText
+              }]
+            }
           },
           pushNotification: {
-            status: 'ENABLED',
-          },
+            status: 'ENABLED'
+          }
         };
 
         // If recurrence is weekly, add the days of the week.
         // TODO: Implement slot to take in the days of the week for weekly reminders.
-        if (reminderRequest.trigger.recurrence.freq === "WEEKLY") {
-          reminderRequest.trigger.recurrence.byDay = ["MO"];
+        if (reminderRequest.trigger.recurrence.freq === "DAILY") {
+          reminderRequests.push(reminderRequest);
+        }
+        else if (reminderRequest.trigger.recurrence.freq === "WEEKLY") {
+          var day_slot_values = handlerInput.requestEnvelope.request.intent.slots.day.value.toUpperCase()
+
+          console.log("received day_slot_values");
+          console.log(day_slot_values);
+          
+          // remove all commas and 'AND'
+          day_slot_values = day_slot_values.replace(/,/g, ""); // all commas
+          day_slot_values = day_slot_values.replace(/AND /gi, ""); // perform a global, case-insensitive replacement
+          console.log("After removing commas and 'AND'");
+          console.log(day_slot_values);
+
+          // convert to array
+          var days = day_slot_values.split(" ");
+
+          var final_days = Array();
+
+          for (let i = 0; i < days.length; i++) {
+            // take the first 2 letters of the day
+            let day = days[i].slice(0,2);
+            final_days.push(day);
+          }
+
+          console.log("final_days array:");
+          console.log(final_days);
+
+          // Cannot create single reminderRequest for multiple days if weekly (see: https://forums.developer.amazon.com/questions/199059/setting-up-recurrent-reminders-unsupported-trigger.html)
+          if (final_days.length === 1) {
+            reminderRequest.trigger.recurrence.byDay = final_days;
+            reminderRequests.push(reminderRequest);
+          } else {
+            // create multiple reminders for each day
+            for (let i = 0; i < final_days.length; i++) {
+              // deep copy reminderRequest object
+              cloned_object = JSON.parse(JSON.stringify(reminderRequest));
+              cloned_object.trigger.recurrence.byDay = Array(final_days[i]);
+              reminderRequests.push(cloned_object);
+            }
+          }
+          
+          // reminderRequest.trigger.recurrence.byDay = ['MO', 'TU', 'WE'];
         }
       }
 
-      console.log("final reminderRequest:");
-      console.log(reminderRequest);
-
-      const reminderResponse = await client.createReminder(reminderRequest);
-      console.log(JSON.stringify(reminderResponse));
-    } catch (error) {
-      if (error.name !== 'ServiceError') {
-        console.log(`error: ${error.stack}`);
-        const response = responseBuilder.speak(messages.ERROR).getResponse();
-        return response;
+      // debug reminderRequests
+      for (let j = 0; j < reminderRequests.length; j++) {
+        console.log(`reminderRequests[${j}]:`);
+        console.log(reminderRequests[j]);
       }
-      throw error;
+
+      // create reminders for all reminderRequests
+      for (let i = 0; i < reminderRequests.length; i++) {
+        try {
+          const reminderResponse = await client.createReminder(reminderRequests[i]);
+          console.log(JSON.stringify(reminderResponse));
+        } catch (error) {
+          console.log("there was an error: ");
+          console.log(error.stack);
+          if (error.name !== 'ServiceError') {
+            console.log(`error: ${error.stack}`);
+            const response = responseBuilder.speak(messages.ERROR).getResponse();
+            return response;
+          }
+          throw error;
+        }
+      }
+
+      // const reminderResponse = await client.createReminder(reminderRequest);
+      // console.log(JSON.stringify(reminderResponse));
+    } catch (error) {
+      console.log("should never reach here");
+      // console.log("there was an error: ");
+      // console.log(error.stack);
+      // if (error.name !== 'ServiceError') {
+      //   console.log(`error: ${error.stack}`);
+      //   const response = responseBuilder.speak(messages.ERROR).getResponse();
+      //   return response;
+      // }
+      // throw error;
     }
 
     return responseBuilder
@@ -383,6 +472,8 @@ const ErrorHandler = {
   handle(handlerInput, error) {
     // console.log(`ERROR STATUS: ${error.statusCode}`);
     console.log(`ERROR MESSAGE: ${error.message}`);
+    console.log(`ERROR HANDLER: error status code: ${error.statusCode}`);
+    console.log(`ERROR HANDLER: error stack: ${error.stack}`);
     // console.log(`ERROR RESPONSE: ${JSON.stringify(error.response)}`);
     // console.log(`ERROR STACK: ${error.stack}`);
     switch (error.statusCode) {
@@ -423,6 +514,7 @@ exports.handler = skillBuilder
     LaunchRequestHandler,
     CreateReminderHandler,
     // StartedInProgressReminderIntentHandler,
+    dayGivenWeeklyFrequencyHandler,
     frequencyGivenRepeatHandler,
     AddNewPillHandler,
     SessionEndedRequestHandler,

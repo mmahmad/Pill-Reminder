@@ -44,6 +44,10 @@
                         {
                             "name": "frequency",
                             "type": "frequency"
+                        },
+                        {
+                            "name": "day",
+                            "type": "AMAZON.DayOfWeek"
                         }
                     ],
                     "samples": [
@@ -99,6 +103,29 @@
                                 "value": "weekly",
                                 "synonyms": [
                                     "every week"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "AMAZON.DayOfWeek",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "monday, tuesday, and wednesday",
+                                "synonyms": [
+                                    "mondays tuesday and wednesdays",
+                                    "mondays, tuesday, and wednesdays",
+                                    "monday tuesday and wednesday"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "monday and tuesday",
+                                "synonyms": [
+                                    "mondays and tuesdays"
                                 ]
                             }
                         }
