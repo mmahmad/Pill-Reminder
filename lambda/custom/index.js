@@ -188,6 +188,8 @@ const AddNewPillHandler = {
     var time = handlerInput.requestEnvelope.request.intent.slots.time.value;
     var date = handlerInput.requestEnvelope.request.intent.slots.date.value;
 
+    // TODO: Implement scenario of reminder(s) for multiple days but non-recurring
+
     var reminderText = `time to take your ${colorName} pill.`;
     
     try {
@@ -240,7 +242,6 @@ const AddNewPillHandler = {
         };
 
         // If recurrence is weekly, add the days of the week.
-        // TODO: Implement slot to take in the days of the week for weekly reminders.
         if (reminderRequest.trigger.recurrence.freq === "DAILY") {
           reminderRequests.push(reminderRequest);
         }
