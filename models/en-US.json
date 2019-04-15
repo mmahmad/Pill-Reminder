@@ -24,15 +24,31 @@
                     "slots": [
                         {
                             "name": "Color",
-                            "type": "AMAZON.Color"
+                            "type": "AMAZON.Color",
+                            "samples": [
+                                "{Color}"
+                            ]
                         },
                         {
                             "name": "date",
-                            "type": "AMAZON.DATE"
+                            "type": "AMAZON.DATE",
+                            "samples": [
+                                "{date} at {time}",
+                                "on {date} at {time}",
+                                "on {date}",
+                                "set reminder for {date}",
+                                "remind me on {date}",
+                                "{date}"
+                            ]
                         },
                         {
                             "name": "time",
-                            "type": "AMAZON.TIME"
+                            "type": "AMAZON.TIME",
+                            "samples": [
+                                "remind me at {time}",
+                                "{time}",
+                                "at {time}"
+                            ]
                         },
                         {
                             "name": "yesOrNo",
@@ -155,15 +171,19 @@
                             "name": "date",
                             "type": "AMAZON.DATE",
                             "confirmationRequired": false,
-                            "elicitationRequired": false,
-                            "prompts": {}
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1436899678201.12812621531"
+                            }
                         },
                         {
                             "name": "time",
                             "type": "AMAZON.TIME",
                             "confirmationRequired": false,
-                            "elicitationRequired": false,
-                            "prompts": {}
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1436899678201.474407848112"
+                            }
                         },
                         {
                             "name": "yesOrNo",
@@ -177,6 +197,13 @@
                         {
                             "name": "frequency",
                             "type": "frequency",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "day",
+                            "type": "AMAZON.DayOfWeek",
                             "confirmationRequired": false,
                             "elicitationRequired": false,
                             "prompts": {}
@@ -233,6 +260,55 @@
                     {
                         "type": "PlainText",
                         "value": "Do you want this reminder to repeat?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.30836359008.699159922269",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What pill should I remind you to take?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.30836359008.1240220594880",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What time should I remind you?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.30836359008",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Should I set a {frequency} reminder on {day} at {time} to take {Color} ?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Should I set a {frequency} reminder to take {Color} at {time} ?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1436899678201.12812621531",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "When should I remind you?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1436899678201.474407848112",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What time should I remind you?"
                     }
                 ]
             }

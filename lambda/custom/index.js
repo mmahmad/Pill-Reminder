@@ -147,6 +147,9 @@ const AddNewPillHandler = {
     return request.type === 'IntentRequest' && request.intent.name === 'AddNewPillIntent';
   },
   async handle(handlerInput) {
+    // To call another handler
+    // return AddRecurringReminderHandler.handle(handlerInput);
+
     const requestEnvelope = handlerInput.requestEnvelope;
     const responseBuilder = handlerInput.responseBuilder;
     const consentToken = requestEnvelope.context.System.apiAccessToken;
@@ -342,6 +345,18 @@ const AddNewPillHandler = {
   }
 };
 
+const AddRecurringReminderHandler = {
+  canHandle(handlerInput) {
+    const request = handlerInput.requestEnvelope.request;
+    return request.type === 'IntentRequest' && request.intent.name === 'AddRecurringReminderIntent';
+  }, async handle(handlerInput) {
+    console.log("AddRecurringReminderIntent called");
+    return responseBuilder
+    .speak("You asked to create a recurring reminder")
+    .getResponse();
+  }
+};
+
 const CreateReminderHandler = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
@@ -518,6 +533,7 @@ exports.handler = skillBuilder
     dayGivenWeeklyFrequencyHandler,
     frequencyGivenRepeatHandler,
     AddNewPillHandler,
+    AddRecurringReminderHandler,
     SessionEndedRequestHandler,
     HelpHandler,
     CancelStopHandler,
