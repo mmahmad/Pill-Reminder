@@ -72,6 +72,15 @@
                         "set reminder for {Color} {date} at {time}",
                         "set reminder for {Color} on {date} at {time}"
                     ]
+                },
+                {
+                    "name": "GetNextReminderIntent",
+                    "slots": [],
+                    "samples": [
+                        "when do I take my next medicine",
+                        "When do I take my next pill",
+                        "When is my next reminder"
+                    ]
                 }
             ],
             "types": [

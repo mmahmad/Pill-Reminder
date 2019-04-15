@@ -1,4 +1,5 @@
 const Alexa = require('ask-sdk-core');
+var http = require('http'); 
 
 const messages = {
   WELCOME: 'Welcome to the Reminders API Demo Skill!  You can say "create a reminder" to create a reminder.  What would you like to do?',
@@ -96,6 +97,37 @@ const LaunchRequestHandler = {
 //     .getResponse();
 //   }
 // };
+
+function httpGet(query, callback) {
+  var options = {
+      // host: 'numbersapi.com',
+      // host: '/v1/alerts/reminders',
+      // host: 'jsonplaceholder.typicode.com',
+      // path: '/' + encodeURIComponent(query),
+      // path: '/todos/1',
+      host: '/',
+      path: 'v1/alerts/reminders',
+      method: 'GET',
+  };
+
+  var req = http.request(options, res => {
+      res.setEncoding('utf8');
+      var responseString = "";
+      
+      //accept incoming data asynchronously
+      res.on('data', chunk => {
+          responseString = responseString + chunk;
+      });
+      
+      //return the data when streaming is complete
+      res.on('end', () => {
+          console.log(responseString);
+          callback(responseString);
+      });
+
+  });
+  req.end();
+}
 
 const frequencyGivenRepeatHandler = {
   canHandle(handlerInput) {
@@ -317,6 +349,7 @@ const AddNewPillHandler = {
 
       // const reminderResponse = await client.createReminder(reminderRequest);
       // console.log(JSON.stringify(reminderResponse));
+
     } catch (error) {
       console.log("should never reach here");
       // console.log("there was an error: ");
@@ -341,6 +374,82 @@ const AddNewPillHandler = {
 
     // }
 
+
+  }
+};
+
+const GetNextReminderHandler = {
+  canHandle(handlerInput) {
+    const request = handlerInput.requestEnvelope.request;
+    return request.type === 'IntentRequest' && request.intent.name === 'GetNextReminderIntent';
+  },
+  async handle(handlerInput) {
+    const requestEnvelope = handlerInput.requestEnvelope;
+    const responseBuilder = handlerInput.responseBuilder;
+    const consentToken = requestEnvelope.context.System.apiAccessToken;
+
+    if (!consentToken) {
+      return responseBuilder
+        .speak(messages.NOTIFY_MISSING_PERMISSIONS)
+        .withAskForPermissionsConsentCard(PERMISSIONS)
+        .getResponse();
+    }
+
+    let speech = null;
+
+    try {
+      const client = handlerInput.serviceClientFactory.getReminderManagementServiceClient();
+
+      const allReminders = await client.getReminders();
+      console.log("got all reminders");
+      console.log(JSON.stringify(allReminders));
+
+      const totalReminders = allReminders.totalCount; // string of integer
+      const reminders = allReminders.alerts; // array
+
+      // https://stackoverflow.com/questions/10123953/sort-javascript-object-array-by-date
+      const sortedReminders = reminders.sort(function(a,b){
+        // Turn your strings into dates, and then subtract them
+        // to get a value that is either negative, positive, or zero.
+        return new Date(b.trigger.scheduledTime) - new Date(a.trigger.scheduledTime);
+      });
+
+      let weekday = new Array(7);
+      weekday[0] = "Sunday";
+      weekday[1] = "Monday";
+      weekday[2] = "Tuesday";
+      weekday[3] = "Wednesday";
+      weekday[4] = "Thursday";
+      weekday[5] = "Friday";
+      weekday[6] = "Saturday";
+
+
+      const scheduledDateTime = new Date(sortedReminders[0].trigger.scheduledTime)
+      const day = weekday[scheduledDateTime.getDay()];
+      // speech = {
+      //   "outputSpeech": {
+      //     "type": "SSML",
+      //     "ssml": `<speak>Your next reminder is on ${day} at <say-as interpret-as="time">${scheduledDateTime.getTime}</say-as></speak>`
+      //   }
+      // };
+      // const time = 
+
+      speech = `Your next reminder is: ${sortedReminders[0].alertInfo.spokenInfo.content[0].text}, on ${day} at ${scheduledDateTime.getTime()}`;
+      // speech = `<speak><say-as interpret-as="date">20190414</speak>`
+
+    } catch (error) {
+      console.log("ERROR GETTING ALL REMINDERS");
+      console.log(error.stack);
+    }
+
+    // return {
+    //   outputSpeech: "SSML",
+    //   ssml: "<speak><say-as interpret-as=\"date\">20190414</say-as></speak>"
+    // }
+    return handlerInput.responseBuilder
+    .speak(speech)
+    .reprompt(speech)
+    .getResponse();
 
   }
 };
@@ -533,6 +642,7 @@ exports.handler = skillBuilder
     dayGivenWeeklyFrequencyHandler,
     frequencyGivenRepeatHandler,
     AddNewPillHandler,
+    GetNextReminderHandler,
     AddRecurringReminderHandler,
     SessionEndedRequestHandler,
     HelpHandler,
