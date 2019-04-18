@@ -94,6 +94,21 @@
                         "I have taken my medicines",
                         "I have taken my medicine"
                     ]
+                },
+                {
+                    "name": "GetWeekSummaryIntent",
+                    "slots": [],
+                    "samples": [
+                        "week's history",
+                        "week's summary",
+                        "what is my week summary",
+                        "week summary",
+                        "tell me my week history",
+                        "week history",
+                        "what is my week history",
+                        "what did my week look like",
+                        "how was my week"
+                    ]
                 }
             ],
             "types": [

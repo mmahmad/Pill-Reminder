@@ -522,7 +522,7 @@ const AddNewPillHandler = {
   }
 };
 
-SetReminderAsCompleteHandler = {
+const SetReminderAsCompleteHandler = {
   canHandle(handlerInput) {
     return handlerInput.requestEnvelope.request.type === "IntentRequest"
     && handlerInput.requestEnvelope.request.intent.name === "SetReminderAsCompleteIntent";
@@ -625,6 +625,141 @@ SetReminderAsCompleteHandler = {
   }
 };
 
+function getLastWeek() {
+  var today = new Date();
+  var lastWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+  return lastWeek;
+}
+
+/**
+ * Called by GetWeekSummaryHandler
+ * @param {*} userId 
+ */
+async function getPreviousWeekHistoryFromDB(userId) {
+
+    // get previous week dates (Monday and Sunday)
+    let lastWeek = getLastWeek();
+    let first = lastWeek.getDate() - lastWeek.getDay() +1; // assuming first day of the week is Monday
+    let last = first + 6; // last day is the first day + 6
+    let weekMonth = lastWeek.getMonth() + 1;
+    let year = lastWeek.getFullYear();
+
+    let dateOfFirstDayOfThePreviousWeek = ("0000" + year.toString()).slice(-4) + "-" + ("00" + weekMonth.toString()).slice(-2) + "-" + ("00" + first.toString()).slice(-2);
+    let dateOfLastDateOfThePreviousWeek = ("0000" + year.toString()).slice(-4) + "-" + ("00" + weekMonth.toString()).slice(-2) + "-" + ("00" + last.toString()).slice(-2);
+
+    // for current user, check if there is a reminder with SCHEDULED_DATE === dateString. 
+    var params = {
+      TableName: TABLE_NAME,
+      // Key: {
+      //   'USER_ID': userId
+      // },
+      KeyConditionExpression: '#user_id = :user_id and #scheduled_date between :startWeekDate and :endWeekDate',
+      ExpressionAttributeNames: {
+        "#user_id": "USER_ID",
+        "#scheduled_date": "SCHEDULED_DATE"
+      },
+      ExpressionAttributeValues: {
+        ":startWeekDate": dateOfFirstDayOfThePreviousWeek,
+        ":endWeekDate": dateOfLastDateOfThePreviousWeek,
+        ":user_id": userId
+      }
+      // ProjectionExpression: 'CUSTOMER_NAME'
+    };
+
+    let prompt = ``;
+    // Call DynamoDB to read the item from the table
+    return new Promise((resolve, reject) => {
+      docClient.query(params, function(err, data) {
+        if (err) {
+          console.log("Error", err);
+        } else {
+          if (data.Items.length > 0) {
+            console.log("found data");
+            console.log(JSON.stringify(data));
+  
+            prompt = `You had ${data.Items.length} reminders last week. `;
+            let forgotten = 0
+            let rememberedBeforeReminder = 0;
+            let rememberedAfterReminder = 0;
+  
+            for (let i = 0; i < data.Items.length; i++) {
+              if (data.Items[i].TYPE == -1) {
+                forgotten++;
+              } else if (data.Items[i].TYPE == 0) {
+                rememberedBeforeReminder++;
+              } else if (data.Items[i].TYPE == 1) {
+                rememberedAfterReminder++;
+              }
+            }
+  
+            prompt += `You took your medicines before being reminded ${rememberedBeforeReminder} times. You had to be reminded ${rememberedAfterReminder} times. You forgot to take your medicines ${forgotten} times.`
+            
+            // // Check if current time is earlier, compared to SCHEDULED_TIME
+            // const scheduledTime = data.Items[0].SCHEDULED_TIME;
+            // const currentDate = new Date();
+            // const currentTime = `${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}`;
+  
+            // // Credits: https://stackoverflow.com/questions/6212305/how-can-i-compare-two-time-strings-in-the-format-hhmmss
+            // let isEarly = Date.parse(`01/01/2011 ${scheduledTime}`) > Date.parse(`01/01/2011 ${currentTime}`); // the date is arbitrary
+  
+            // // data.Items[0].TYPE = 1;
+            // // update
+            
+            // params = {
+            //   TableName: TABLE_NAME,
+            //   Key: { "USER_ID" : userId, "SCHEDULED_DATE": date },
+            //   UpdateExpression: 'set #t = :x',
+            //   // ConditionExpression: '#a < :MAX',
+            //   ExpressionAttributeNames: {'#t': 'TYPE'},
+            //   ExpressionAttributeValues: {
+            //     ':x' : isEarly ? 0 : 1
+            //   }
+            // };
+            
+            // docClient.update(params, function(err, data) {
+            //     if (err) {
+            //     console.log(`Failed to update db`);
+            //     console.log(err);
+            //     }
+            //     else {
+            //     console.log(`db updated successfully. returned data:`);
+            //     console.log(data);
+            //     }
+            // });
+
+            resolve(prompt);
+  
+          } else {
+            console.log(`no reminders were scheduled for today, cannot set any reminder to completed!`);
+            resolve(`no reminders were scheduled for today, cannot set any reminder to completed!`);
+            // return responseBuilder
+            // .speak(`No reminders were scheduled for the previous week!`)
+            // .getResponse();
+          }
+        }
+      });
+    });
+
+}
+
+const GetWeekSummaryHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === "IntentRequest"
+    && handlerInput.requestEnvelope.request.intent.name === "GetWeekSummaryIntent";
+  },
+  async handle(handlerInput) {
+    const responseBuilder = handlerInput.responseBuilder;
+    const userId = handlerInput.requestEnvelope.session.user.userId.split(".")[3];
+
+    let prompt = await getPreviousWeekHistoryFromDB(userId);
+    console.log(`Received prompt from getPreviousWeekHistoryFromDB()`);
+
+    return responseBuilder
+    .speak(prompt)
+    .getResponse();
+
+  }
+};
 /**
  * Insert all records into database
  */
@@ -922,6 +1057,7 @@ exports.handler = skillBuilder
     frequencyGivenRepeatHandler,
     AddNewPillHandler,
     SetReminderAsCompleteHandler,
+    GetWeekSummaryHandler,
     GetNextReminderHandler,
     AddRecurringReminderHandler,
     SessionEndedRequestHandler,
