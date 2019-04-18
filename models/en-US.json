@@ -81,6 +81,19 @@
                         "When do I take my next pill",
                         "When is my next reminder"
                     ]
+                },
+                {
+                    "name": "SetReminderAsCompleteIntent",
+                    "slots": [],
+                    "samples": [
+                        "Mark today's reminders complete",
+                        "I have taken my medicine today",
+                        "I have taken my medicines today",
+                        "I have taken my meds today",
+                        "I have taken my meds",
+                        "I have taken my medicines",
+                        "I have taken my medicine"
+                    ]
                 }
             ],
             "types": [

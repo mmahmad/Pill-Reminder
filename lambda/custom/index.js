@@ -528,8 +528,100 @@ SetReminderAsCompleteHandler = {
     && handlerInput.requestEnvelope.request.intent.name === "SetReminderAsCompleteIntent";
   },
   async handle(handlerInput) {
+
+    const responseBuilder = handlerInput.responseBuilder;
+    const userId = handlerInput.requestEnvelope.session.user.userId.split(".")[3];
+    
     // get today's date
-    dateToday = new Date();
+    const dateToday = new Date();
+    let dd = dateToday.getDate();
+    if(dd<10) 
+    {
+        dd='0'+dd;
+    }
+    let mm = dateToday.getMonth() + 1;
+    if(mm<10) 
+    {
+        mm='0'+mm;
+    }
+    let yyyy = dateToday.getFullYear();
+    let date = `${yyyy}-${mm}-${dd}`; // date string to match SCHEDULED_DATE against
+
+    console.log(`dateString to match: ${date}`);
+
+    // for current user, check if there is a reminder with SCHEDULED_DATE === dateString. 
+    var params = {
+      TableName: TABLE_NAME,
+      // Key: {
+      //   'USER_ID': userId
+      // },
+      KeyConditionExpression: '#user_id = :user_id and #scheduled_date = :reminder_date',
+      ExpressionAttributeNames: {
+        "#user_id": "USER_ID",
+        "#scheduled_date": "SCHEDULED_DATE"
+      },
+      ExpressionAttributeValues: {
+        ":reminder_date": date,
+        ":user_id": userId
+    }
+      // ProjectionExpression: 'CUSTOMER_NAME'
+  };
+
+  // Call DynamoDB to read the item from the table
+  docClient.query(params, function(err, data) {
+    if (err) {
+      console.log("Error", err);
+    } else {
+      if (data.Items.length > 0) {
+        console.log("found data");
+        console.log(JSON.stringify(data));
+        
+        // Check if current time is earlier, compared to SCHEDULED_TIME
+        const scheduledTime = data.Items[0].SCHEDULED_TIME;
+        const currentDate = new Date();
+        const currentTime = `${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}`;
+
+        // Credits: https://stackoverflow.com/questions/6212305/how-can-i-compare-two-time-strings-in-the-format-hhmmss
+        let isEarly = Date.parse(`01/01/2011 ${scheduledTime}`) > Date.parse(`01/01/2011 ${currentTime}`); // the date is arbitrary
+
+        // data.Items[0].TYPE = 1;
+        // update
+        
+        params = {
+          TableName: TABLE_NAME,
+          Key: { "USER_ID" : userId, "SCHEDULED_DATE": date },
+          UpdateExpression: 'set #t = :x',
+          // ConditionExpression: '#a < :MAX',
+          ExpressionAttributeNames: {'#t': 'TYPE'},
+          ExpressionAttributeValues: {
+            ':x' : isEarly ? 0 : 1
+          }
+        };
+        
+        docClient.update(params, function(err, data) {
+           if (err) {
+            console.log(`Failed to update db`);
+            console.log(err);
+           }
+           else {
+            console.log(`db updated successfully. returned data:`);
+            console.log(data);
+           }
+        });
+
+      } else {
+        // no reminders were scheduled for today, cannot set any reminder to completed!
+        return responseBuilder
+        .speak(`No reminders were scheduled for today!`)
+        .getResponse();
+      }
+    }
+  });
+
+  return responseBuilder
+  .speak(`Great job!`)
+  .getResponse();
+    
   }
 };
 
