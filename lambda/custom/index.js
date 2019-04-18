@@ -10,6 +10,8 @@ AWS.config.update({region: 'us-east-1'}); // N. Virginia
 // Create DynamoDB document client
 var docClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 
+const TABLE_NAME = "REMINDERS" // dynamoDB table name
+
 const messages = {
   WELCOME: 'Welcome to the Reminders API Demo Skill!  You can say "create a reminder" to create a reminder.  What would you like to do?',
   WHAT_DO_YOU_WANT: 'What would you like to do?',
@@ -236,57 +238,72 @@ const AddNewPillHandler = {
     var time = handlerInput.requestEnvelope.request.intent.slots.time.value;
     var date = handlerInput.requestEnvelope.request.intent.slots.date.value;
 
-    // TODO: Only insert if the user has not yet scheduled for the same day
-
+    // Only insert if the user has not yet scheduled for the same day [NO NEED TO DO THIS]
     // var params = {
-    //   TableName: 'REMINDERS',
-    //   Key: {
-    //     'USER_ID': {S: userId}
+    //   TableName: TABLE_NAME,
+    //   // Key: {
+    //   //   'USER_ID': userId
+    //   // },
+    //   KeyConditionExpression: '#user_id = :user_id and #scheduled_date = :reminder_date',
+    //   ExpressionAttributeNames: {
+    //     "#user_id": "USER_ID",
+    //     "#scheduled_date": "SCHEDULED_DATE"
     //   },
-    //   // KeyConditionExpression: "#yr = :yyyy and title between :letter1 and :letter2",
-    //   KeyConditionExpression: `SCHEDULED_DATE = :REMINDER_DATE`,
     //   ExpressionAttributeValues: {
-    //     ":REMINDER_DATE": date,
-    //     // ":letter1": "A",
-    //     // ":letter2": "L"
+    //     ":reminder_date": date,
+    //     ":user_id": userId
     // }
     //   // ProjectionExpression: 'CUSTOMER_NAME'
     // };
 
-    // let error_connecting_to_db = false;
-    // // Call DynamoDB to read the item from the table
-    // ddb.getItem(params, function(err, data) {
+    // Call DynamoDB to read the item from the table
+    // docClient.query(params, function(err, data) {
     //   if (err) {
     //     console.log("Error", err);
-    //     error_connecting_to_db = true;
     //   } else {
     //     console.log("Success getting dynamodb item. JSON.stringify(data.Item):");
-    //     console.log(JSON.stringify(data.Item));
+    //     console.log(JSON.stringify(data));
 
-    //     console.log("data.Item.SCHEDULED_DATETIME.S: " + data.Item.SCHEDULED_DATETIME.S);
-    //     console.log("data.Item.REMINDER.S: " + data.Item.REMINDER.S);
+    //     if (data.Items.length > 0) { // db already has reminder scheduled for this day
+    //       console.log(`db already has an entry for ${date}. Not creating new entry.`);
+    //     } else {
+    //       console.log(`No reminder previously scheduled for ${date}. Inserting record into dynamoDB.`);
+    //       var params = {
+    //         TableName: TABLE_NAME,
+    //         Item: {
+    //           'CREATED_UTC_TIMESTAMP': `${new Date().valueOf()}`, // unix timestamp
+    //           'USER_ID' : userId,
+    //           'LATEST_MEDICINE_REMINDER': colorName,
+    //           'SCHEDULED_DATE': date,
+    //           'SCHEDULED_TIME': `${time}:00.000`,
+    //           'SCHEDULED_DATETIME': `${date}T${time}:00.000`,
+    //           'TYPE': -1 // by default, reminder marked as 'forgotten'. Will be updated by user.
+    //         }
+    //       };
+          
+    //       // Call DynamoDB to add the item to the table
+    //       docClient.put(params, function(err, data) {
+    //         if (err) {
+    //           console.log("Error", err);
+    //         } else {
+    //           console.log("Record successfully inserted in database", data);
+    //         }
+    //       });
+    //     }
     //   }
     // });
 
-    // if (error_connecting_to_db) {
-    //   return responseBuilder
-    //   .speak('There was an error connecting to the database. Please try again.')
-    //   .getResponse();
-    // }
-
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////
-    console.log("Inserting item into dynamodb");
+    // Insert into db. This replaces any previous reminders that were set for the same day.
     var params = {
-      TableName: 'REMINDERS',
+      TableName: TABLE_NAME,
       Item: {
         'CREATED_UTC_TIMESTAMP': `${new Date().valueOf()}`, // unix timestamp
         'USER_ID' : userId,
-        'REMINDER': colorName,
+        'LATEST_MEDICINE_REMINDER': colorName,
         'SCHEDULED_DATE': date,
         'SCHEDULED_TIME': `${time}:00.000`,
-        'SCHEDULED_DATETIME': `${date}T${time}:00.000`
+        'SCHEDULED_DATETIME': `${date}T${time}:00.000`,
+        'TYPE': -1 // by default, reminder marked as 'forgotten'. Will be updated by user.
       }
     };
     
@@ -296,46 +313,10 @@ const AddNewPillHandler = {
         console.log("Error", err);
       } else {
         console.log("Record successfully inserted in database", data);
-        // var params = {
-        //   TableName: 'REMINDERS',
-        //   Key: {
-        //     'USER_ID': {S: userId}
-        //   },
-        //   // ProjectionExpression: 'CUSTOMER_NAME'
-        // };
-        var params = {
-          TableName: 'REMINDERS',
-          // Key: {
-          //   'USER_ID': userId
-          // },
-          KeyConditionExpression: '#user_id = :user_id and #scheduled_date = :reminder_date',
-          ExpressionAttributeNames: {
-            "#user_id": "USER_ID",
-            "#scheduled_date": "SCHEDULED_DATE"
-          },
-          ExpressionAttributeValues: {
-            ":reminder_date": date,
-            ":user_id": userId
-        }
-          // ProjectionExpression: 'CUSTOMER_NAME'
-        };
-    
-        // Call DynamoDB to read the item from the table
-        docClient.query(params, function(err, data) {
-          if (err) {
-            console.log("Error", err);
-          } else {
-            console.log("Success getting dynamodb item. JSON.stringify(data.Item):");
-            console.log(JSON.stringify(data));
-    
-            // console.log("data.Item.SCHEDULED_DATETIME.S: " + data.Item.SCHEDULED_DATETIME);
-            // console.log("data.Item.REMINDER.S: " + data.Item.REMINDER);
-          }
-        });
       }
     });
 
-
+    /////////////////////////////////////////////////////////////////////////////////////////
 
     // TODO: Implement scenario of reminder(s) for multiple days but non-recurring
 
