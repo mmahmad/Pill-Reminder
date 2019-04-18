@@ -1,5 +1,12 @@
 const Alexa = require('ask-sdk-core');
-var http = require('http'); 
+var http = require('http');
+// Load the SDK for JavaScript
+var AWS = require('aws-sdk');
+// Set the region 
+AWS.config.update({region: 'us-east-1'}); // N. Virginia
+
+// Create the DynamoDB service object
+var ddb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
 
 const messages = {
   WELCOME: 'Welcome to the Reminders API Demo Skill!  You can say "create a reminder" to create a reminder.  What would you like to do?',
@@ -185,6 +192,45 @@ const AddNewPillHandler = {
     const requestEnvelope = handlerInput.requestEnvelope;
     const responseBuilder = handlerInput.responseBuilder;
     const consentToken = requestEnvelope.context.System.apiAccessToken;
+
+    console.log("Inserting item into dynamodb");
+    var params = {
+      TableName: 'REMINDERS',
+      Item: {
+        'USER_ID' : {S: '332'},
+        'CUSTOMER_NAME' : {S: 'Mohammad Ahmad'}
+      }
+    };
+    
+    // Call DynamoDB to add the item to the table
+    ddb.putItem(params, function(err, data) {
+      if (err) {
+        console.log("Error", err);
+      } else {
+        console.log("Success", data);
+      }
+    });
+
+    var params = {
+      TableName: 'REMINDERS',
+      Key: {
+        'USER_ID': {S: '332'}
+      },
+      // ProjectionExpression: 'CUSTOMER_NAME'
+    };
+
+    // Call DynamoDB to read the item from the table
+    ddb.getItem(params, function(err, data) {
+      if (err) {
+        console.log("Error", err);
+      } else {
+        console.log("Success getting dynamodb item. JSON.stringify(data.Item):");
+        console.log(JSON.stringify(data.Item));
+
+        console.log("data.Item.CUSTOMER_NAME.S:");
+        console.log(data.Item.CUSTOMER_NAME.S);
+      }
+    });
 
     console.log("Before extracting slot");
     console.log("handlerInput.requestEnvelope.request.intent:");
