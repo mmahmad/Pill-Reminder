@@ -388,10 +388,23 @@ const AddNewPillHandler = {
             let nextDay = new Date(firstDate);
             nextDay.setDate(firstDate.getDate()+k);
 
+            // format day and month as 2 digits to be consistent with how Amazon formats their dates through Alexa
+            let dd = nextDay.getDate();
+            if(dd<10) 
+            {
+                dd='0'+dd;
+            }
+
+            let mm = nextDay.getMonth()+1;
+            if(mm<10) 
+            {
+                mm='0'+mm;
+            }
+
             dbRowTemplate = {
               userId: userId,
               colorName: colorName,
-              date: `${nextDay.getFullYear()}-${nextDay.getMonth()+1}-${nextDay.getDate()}`,
+              date: `${nextDay.getFullYear()}-${mm}-${dd}`,
               time: time,
             }
 
@@ -509,6 +522,16 @@ const AddNewPillHandler = {
   }
 };
 
+SetReminderAsCompleteHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === "IntentRequest"
+    && handlerInput.requestEnvelope.request.intent.name === "SetReminderAsCompleteIntent";
+  },
+  async handle(handlerInput) {
+    // get today's date
+    dateToday = new Date();
+  }
+};
 
 /**
  * Insert all records into database
@@ -806,6 +829,7 @@ exports.handler = skillBuilder
     dayGivenWeeklyFrequencyHandler,
     frequencyGivenRepeatHandler,
     AddNewPillHandler,
+    SetReminderAsCompleteHandler,
     GetNextReminderHandler,
     AddRecurringReminderHandler,
     SessionEndedRequestHandler,
