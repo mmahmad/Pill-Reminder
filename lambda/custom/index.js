@@ -192,45 +192,10 @@ const AddNewPillHandler = {
     const requestEnvelope = handlerInput.requestEnvelope;
     const responseBuilder = handlerInput.responseBuilder;
     const consentToken = requestEnvelope.context.System.apiAccessToken;
+    const userId = handlerInput.requestEnvelope.session.user.userId.split(".")[3];
 
-    console.log("Inserting item into dynamodb");
-    var params = {
-      TableName: 'REMINDERS',
-      Item: {
-        'USER_ID' : {S: '332'},
-        'CUSTOMER_NAME' : {S: 'Mohammad Ahmad'}
-      }
-    };
-    
-    // Call DynamoDB to add the item to the table
-    ddb.putItem(params, function(err, data) {
-      if (err) {
-        console.log("Error", err);
-      } else {
-        console.log("Success", data);
-      }
-    });
-
-    var params = {
-      TableName: 'REMINDERS',
-      Key: {
-        'USER_ID': {S: '332'}
-      },
-      // ProjectionExpression: 'CUSTOMER_NAME'
-    };
-
-    // Call DynamoDB to read the item from the table
-    ddb.getItem(params, function(err, data) {
-      if (err) {
-        console.log("Error", err);
-      } else {
-        console.log("Success getting dynamodb item. JSON.stringify(data.Item):");
-        console.log(JSON.stringify(data.Item));
-
-        console.log("data.Item.CUSTOMER_NAME.S:");
-        console.log(data.Item.CUSTOMER_NAME.S);
-      }
-    });
+    console.log("handlerInput JSON stringify");
+    console.log(JSON.stringify(handlerInput));
 
     console.log("Before extracting slot");
     console.log("handlerInput.requestEnvelope.request.intent:");
@@ -268,6 +233,106 @@ const AddNewPillHandler = {
     var colorName = handlerInput.requestEnvelope.request.intent.slots.Color.value;
     var time = handlerInput.requestEnvelope.request.intent.slots.time.value;
     var date = handlerInput.requestEnvelope.request.intent.slots.date.value;
+
+    // TODO: Only insert if the user has not yet scheduled for the same day
+
+    // var params = {
+    //   TableName: 'REMINDERS',
+    //   Key: {
+    //     'USER_ID': {S: userId}
+    //   },
+    //   // KeyConditionExpression: "#yr = :yyyy and title between :letter1 and :letter2",
+    //   KeyConditionExpression: `SCHEDULED_DATE = :REMINDER_DATE`,
+    //   ExpressionAttributeValues: {
+    //     ":REMINDER_DATE": date,
+    //     // ":letter1": "A",
+    //     // ":letter2": "L"
+    // }
+    //   // ProjectionExpression: 'CUSTOMER_NAME'
+    // };
+
+    // let error_connecting_to_db = false;
+    // // Call DynamoDB to read the item from the table
+    // ddb.getItem(params, function(err, data) {
+    //   if (err) {
+    //     console.log("Error", err);
+    //     error_connecting_to_db = true;
+    //   } else {
+    //     console.log("Success getting dynamodb item. JSON.stringify(data.Item):");
+    //     console.log(JSON.stringify(data.Item));
+
+    //     console.log("data.Item.SCHEDULED_DATETIME.S: " + data.Item.SCHEDULED_DATETIME.S);
+    //     console.log("data.Item.REMINDER.S: " + data.Item.REMINDER.S);
+    //   }
+    // });
+
+    // if (error_connecting_to_db) {
+    //   return responseBuilder
+    //   .speak('There was an error connecting to the database. Please try again.')
+    //   .getResponse();
+    // }
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    console.log("Inserting item into dynamodb");
+    var params = {
+      TableName: 'REMINDERS',
+      Item: {
+        'CREATED_UTC_TIMESTAMP': {S: `${new Date().valueOf()}`}, // unix timestamp
+        'USER_ID' : {S: userId},
+        'REMINDER': {S: colorName},
+        'SCHEDULED_DATE': {S: date},
+        'SCHEDULED_TIME': {S: `${time}:00.000`},
+        'SCHEDULED_DATETIME': {S: `${date}T${time}:00.000`}
+      }
+    };
+    
+    // Call DynamoDB to add the item to the table
+    ddb.putItem(params, function(err, data) {
+      if (err) {
+        console.log("Error", err);
+      } else {
+        console.log("Record successfully inserted in database", data);
+        // var params = {
+        //   TableName: 'REMINDERS',
+        //   Key: {
+        //     'USER_ID': {S: userId}
+        //   },
+        //   // ProjectionExpression: 'CUSTOMER_NAME'
+        // };
+        var params = {
+          TableName: 'REMINDERS',
+          Key: {
+            'USER_ID': {S: userId}
+          },
+          // KeyConditionExpression: "#yr = :yyyy and title between :letter1 and :letter2",
+          KeyConditionExpression: `USER_ID= :USER_ID and SCHEDULED_DATE = :REMINDER_DATE`,
+          ExpressionAttributeValues: {
+            ":REMINDER_DATE": date,
+            ":USER_ID": userId
+            // ":letter1": "A",
+            // ":letter2": "L"
+        }
+          // ProjectionExpression: 'CUSTOMER_NAME'
+        };
+    
+        // Call DynamoDB to read the item from the table
+        ddb.getItem(params, function(err, data) {
+          if (err) {
+            console.log("Error", err);
+          } else {
+            console.log("Success getting dynamodb item. JSON.stringify(data.Item):");
+            console.log(JSON.stringify(data.Item));
+    
+            console.log("data.Item.SCHEDULED_DATETIME.S: " + data.Item.SCHEDULED_DATETIME.S);
+            console.log("data.Item.REMINDER.S: " + data.Item.REMINDER.S);
+          }
+        });
+      }
+    });
+
+
 
     // TODO: Implement scenario of reminder(s) for multiple days but non-recurring
 
