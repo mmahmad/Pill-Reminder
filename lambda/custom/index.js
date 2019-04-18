@@ -6,7 +6,9 @@ var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'}); // N. Virginia
 
 // Create the DynamoDB service object
-var ddb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+// var ddb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+// Create DynamoDB document client
+var docClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 
 const messages = {
   WELCOME: 'Welcome to the Reminders API Demo Skill!  You can say "create a reminder" to create a reminder.  What would you like to do?',
@@ -279,17 +281,17 @@ const AddNewPillHandler = {
     var params = {
       TableName: 'REMINDERS',
       Item: {
-        'CREATED_UTC_TIMESTAMP': {S: `${new Date().valueOf()}`}, // unix timestamp
-        'USER_ID' : {S: userId},
-        'REMINDER': {S: colorName},
-        'SCHEDULED_DATE': {S: date},
-        'SCHEDULED_TIME': {S: `${time}:00.000`},
-        'SCHEDULED_DATETIME': {S: `${date}T${time}:00.000`}
+        'CREATED_UTC_TIMESTAMP': `${new Date().valueOf()}`, // unix timestamp
+        'USER_ID' : userId,
+        'REMINDER': colorName,
+        'SCHEDULED_DATE': date,
+        'SCHEDULED_TIME': `${time}:00.000`,
+        'SCHEDULED_DATETIME': `${date}T${time}:00.000`
       }
     };
     
     // Call DynamoDB to add the item to the table
-    ddb.putItem(params, function(err, data) {
+    docClient.put(params, function(err, data) {
       if (err) {
         console.log("Error", err);
       } else {
@@ -303,30 +305,31 @@ const AddNewPillHandler = {
         // };
         var params = {
           TableName: 'REMINDERS',
-          Key: {
-            'USER_ID': {S: userId}
+          // Key: {
+          //   'USER_ID': userId
+          // },
+          KeyConditionExpression: '#user_id = :user_id and #scheduled_date = :reminder_date',
+          ExpressionAttributeNames: {
+            "#user_id": "USER_ID",
+            "#scheduled_date": "SCHEDULED_DATE"
           },
-          // KeyConditionExpression: "#yr = :yyyy and title between :letter1 and :letter2",
-          KeyConditionExpression: `USER_ID= :USER_ID and SCHEDULED_DATE = :REMINDER_DATE`,
           ExpressionAttributeValues: {
-            ":REMINDER_DATE": date,
-            ":USER_ID": userId
-            // ":letter1": "A",
-            // ":letter2": "L"
+            ":reminder_date": date,
+            ":user_id": userId
         }
           // ProjectionExpression: 'CUSTOMER_NAME'
         };
     
         // Call DynamoDB to read the item from the table
-        ddb.getItem(params, function(err, data) {
+        docClient.query(params, function(err, data) {
           if (err) {
             console.log("Error", err);
           } else {
             console.log("Success getting dynamodb item. JSON.stringify(data.Item):");
-            console.log(JSON.stringify(data.Item));
+            console.log(JSON.stringify(data));
     
-            console.log("data.Item.SCHEDULED_DATETIME.S: " + data.Item.SCHEDULED_DATETIME.S);
-            console.log("data.Item.REMINDER.S: " + data.Item.REMINDER.S);
+            // console.log("data.Item.SCHEDULED_DATETIME.S: " + data.Item.SCHEDULED_DATETIME);
+            // console.log("data.Item.REMINDER.S: " + data.Item.REMINDER);
           }
         });
       }
