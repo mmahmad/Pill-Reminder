@@ -11,6 +11,7 @@ AWS.config.update({region: 'us-east-1'}); // N. Virginia
 var docClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 
 const TABLE_NAME = "REMINDERS" // dynamoDB table name
+const DB_DAILY_RECURRING_ROWS_LIMIT = 30 // for a daily reminder, these number of rows are inserted
 
 const messages = {
   WELCOME: 'Welcome to the Reminders API Demo Skill!  You can say "create a reminder" to create a reminder.  What would you like to do?',
@@ -293,41 +294,20 @@ const AddNewPillHandler = {
     //   }
     // });
 
-    // Insert into db. This replaces any previous reminders that were set for the same day.
-    var params = {
-      TableName: TABLE_NAME,
-      Item: {
-        'CREATED_UTC_TIMESTAMP': `${new Date().valueOf()}`, // unix timestamp
-        'USER_ID' : userId,
-        'LATEST_MEDICINE_REMINDER': colorName,
-        'SCHEDULED_DATE': date,
-        'SCHEDULED_TIME': `${time}:00.000`,
-        'SCHEDULED_DATETIME': `${date}T${time}:00.000`,
-        'TYPE': -1 // by default, reminder marked as 'forgotten'. Will be updated by user.
-      }
-    };
-    
-    // Call DynamoDB to add the item to the table
-    docClient.put(params, function(err, data) {
-      if (err) {
-        console.log("Error", err);
-      } else {
-        console.log("Record successfully inserted in database", data);
-      }
-    });
-
     /////////////////////////////////////////////////////////////////////////////////////////
 
     // TODO: Implement scenario of reminder(s) for multiple days but non-recurring
 
     var reminderText = `time to take your ${colorName} pill.`;
+    let dbInsertions = Array();
     
-    try {
+    // try {
       const client = handlerInput.serviceClientFactory.getReminderManagementServiceClient();
       var reminderRequests = Array();
       var reminderRequest = {};
 
-      if (handlerInput.requestEnvelope.request.intent.slots.yesOrNo.value === "no") {
+      if (handlerInput.requestEnvelope.request.intent.slots.yesOrNo.value === "no") { // one-time reminder
+        console.log("received info to set non-recurring reminder.");
         reminderRequest = {
           trigger: {
             // type: 'SCHEDULED_RELATIVE',
@@ -349,7 +329,17 @@ const AddNewPillHandler = {
         };
         // add reminderRequest to reminderRequests array
         reminderRequests.push(reminderRequest);
+        
+        // add to dbInsertions array
+        dbInsertions.push(JSON.parse(JSON.stringify({
+          userId: userId,
+          colorName: colorName,
+          date: date,
+          time: time
+        })));
       } else {
+        // reminder repeats
+        console.log("received info to set recurring reminder.");
         reminderRequest = {
           trigger: {
             type: 'SCHEDULED_ABSOLUTE',
@@ -373,7 +363,45 @@ const AddNewPillHandler = {
 
         // If recurrence is weekly, add the days of the week.
         if (reminderRequest.trigger.recurrence.freq === "DAILY") {
+          console.log("reminders to be set daily");
           reminderRequests.push(reminderRequest);
+          dbRowTemplate = {
+            userId: userId,
+            colorName: colorName,
+            time: time
+          }
+
+          // for each day, starting from 'date', insert DB_DAILY_RECURRING_ROWS_LIMIT rows
+          
+          // for that first date, add to dbInsertions array
+          dbInsertions.push(JSON.parse(JSON.stringify({
+            userId: userId,
+            colorName: colorName,
+            date: date,
+            time: time
+          })));
+
+          // for subsequent dates
+          let firstDate = new Date(date);
+          
+          for (let k = 1; k <= DB_DAILY_RECURRING_ROWS_LIMIT; k++) {
+            let nextDay = new Date(firstDate);
+            nextDay.setDate(firstDate.getDate()+k);
+
+            dbRowTemplate = {
+              userId: userId,
+              colorName: colorName,
+              date: `${nextDay.getFullYear()}-${nextDay.getMonth()+1}-${nextDay.getDate()}`,
+              time: time,
+            }
+
+            dbInsertions.push(JSON.parse(JSON.stringify(dbRowTemplate)));
+            console.log("loop in daily to insert to dbInsertions: " + k);
+
+            // firstDate = nextDay;
+          }
+
+          console.log("length of dbInsertions length for daily reminders: " + dbInsertions.length);
         }
         else if (reminderRequest.trigger.recurrence.freq === "WEEKLY") {
           var day_slot_values = handlerInput.requestEnvelope.request.intent.slots.day.value.toUpperCase()
@@ -430,6 +458,7 @@ const AddNewPillHandler = {
         try {
           const reminderResponse = await client.createReminder(reminderRequests[i]);
           console.log(JSON.stringify(reminderResponse));
+
         } catch (error) {
           console.log("there was an error: ");
           console.log(error.stack);
@@ -445,17 +474,24 @@ const AddNewPillHandler = {
       // const reminderResponse = await client.createReminder(reminderRequest);
       // console.log(JSON.stringify(reminderResponse));
 
-    } catch (error) {
-      console.log("should never reach here");
-      // console.log("there was an error: ");
-      // console.log(error.stack);
-      // if (error.name !== 'ServiceError') {
-      //   console.log(`error: ${error.stack}`);
-      //   const response = responseBuilder.speak(messages.ERROR).getResponse();
-      //   return response;
-      // }
-      // throw error;
-    }
+    // } 
+    
+    // catch (error) {
+    //   console.log("should never reach here");
+    //   console.log(JSON.stringify(error));
+    //   // console.log("there was an error: ");
+    //   // console.log(error.stack);
+    //   // if (error.name !== 'ServiceError') {
+    //   //   console.log(`error: ${error.stack}`);
+    //   //   const response = responseBuilder.speak(messages.ERROR).getResponse();
+    //   //   return response;
+    //   // }
+    //   // throw error;
+    // }
+
+    // Insert into db
+    console.log("All reminders created. Inserting records into db...");
+    writeToDb(dbInsertions);
 
     return responseBuilder
     .speak(messages.REMINDER_CREATED)
@@ -472,6 +508,39 @@ const AddNewPillHandler = {
 
   }
 };
+
+
+/**
+ * Insert all records into database
+ */
+function writeToDb(dbInsertions) {
+
+  console.log("writeToDb called with dbInsertions length: " + dbInsertions.length);
+  for (let i = 0; i < dbInsertions.length; i++) {
+      // Insert into db. This replaces any previous reminders that were set for the same day.
+      let params = {
+        TableName: TABLE_NAME,
+        Item: {
+          'CREATED_UTC_TIMESTAMP': `${new Date().valueOf()}`, // unix timestamp
+          'USER_ID' : dbInsertions[i].userId,
+          'LATEST_MEDICINE_REMINDER': dbInsertions[i].colorName,
+          'SCHEDULED_DATE': dbInsertions[i].date,
+          'SCHEDULED_TIME': `${dbInsertions[i].time}:00.000`,
+          'SCHEDULED_DATETIME': `${dbInsertions[i].date}T${dbInsertions[i].time}:00.000`,
+          'TYPE': -1 // by default, reminder marked as 'forgotten'. Will be updated by user.
+        }
+      };
+        
+      // Call DynamoDB to add the item to the table
+      docClient.put(params, function(err, data) {
+        if (err) {
+          console.log("Error", err);
+        } else {
+          console.log("Record successfully inserted in database", data);
+        }
+      });
+  }
+}
 
 const GetNextReminderHandler = {
   canHandle(handlerInput) {
