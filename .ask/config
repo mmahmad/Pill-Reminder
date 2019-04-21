@@ -6,11 +6,11 @@
       "merge": {},
       "resources": {
         "manifest": {
-          "eTag": "967f1410c3759ae77e3167cd0a73a876"
+          "eTag": "04f203db993ee31338bb217a2b1b2e48"
         },
         "interactionModel": {
           "en-US": {
-            "eTag": "78fab0758d6f318dba115e966879bae2"
+            "eTag": "ed5afe4f6d72dd56b24894aa1ec3804a"
           }
         },
         "lambda": [
@@ -23,7 +23,7 @@
             "codeUri": "lambda/custom",
             "functionName": "ask-reminders-demo",
             "handler": "index.handler",
-            "revisionId": "4f2fd16c-9e27-4b62-a1b3-99c99c58df66",
+            "revisionId": "e1f60031-7aee-4866-a7a6-f71e66b31f0b",
             "runtime": "nodejs8.10"
           }
         ]

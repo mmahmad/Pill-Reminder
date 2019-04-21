@@ -67,6 +67,13 @@
                         }
                     ],
                     "samples": [
+                        "remind me to take {Color}",
+                        "remind me to take {Color} on {date} at {time}",
+                        "remind me to take {Color} at {date} at {time}",
+                        "create a reminder to take {Color}",
+                        "add a reminder to take {Color}",
+                        "add a reminder to take {Color} on {date} at {time}",
+                        "add a reminder for {Color} at {date} at {time}",
                         "set reminder for {Color} at {date} at {time}",
                         "set reminder for {Color} {date} {time}",
                         "set reminder for {Color} {date} at {time}",
@@ -108,6 +115,16 @@
                         "what is my week history",
                         "what did my week look like",
                         "how was my week"
+                    ]
+                },
+                {
+                    "name": "GetDetailedWeekSummaryIntent",
+                    "slots": [],
+                    "samples": [
+                        "week summary in detail",
+                        "detailed week summary",
+                        "give detailed week summary",
+                        "give detailed summary"
                     ]
                 }
             ],

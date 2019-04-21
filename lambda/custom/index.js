@@ -14,17 +14,17 @@ const TABLE_NAME = "REMINDERS" // dynamoDB table name
 const DB_DAILY_RECURRING_ROWS_LIMIT = 30 // for a daily reminder, these number of rows are inserted
 
 const messages = {
-  WELCOME: 'Welcome to the Reminders API Demo Skill!  You can say "create a reminder" to create a reminder.  What would you like to do?',
+  WELCOME: 'Welcome to the Take My Meds Skill!  You can say "set a reminder" to set a reminder for a medicine.  What would you like to do?',
   WHAT_DO_YOU_WANT: 'What would you like to do?',
   NOTIFY_MISSING_PERMISSIONS: 'Please enable Reminder permissions in the Amazon Alexa app using the card I\'ve sent to your Alexa app.',
   ERROR: 'Uh Oh. Looks like something went wrong.',
-  API_FAILURE: 'There was an error with the Reminders API.',
-  GOODBYE: 'Bye! Thanks for using the Reminders API Skill!',
+  API_FAILURE: 'There was an error with the Reminders API. Please try again',
+  GOODBYE: 'Bye! Thanks for using the Take My Meds Skill!',
   UNHANDLED: 'This skill doesn\'t support that. Please ask something else.',
   HELP: 'You can use this skill by asking something like: create a reminder?',
   REMINDER_CREATED: 'OK, I will remind you.',
   UNSUPPORTED_DEVICE: 'Sorry, this device doesn\'t support reminders.',
-  WELCOME_REMINDER_COUNT: 'Welcome to the Reminders API Demo Skill.  The number of your reminders related to this skill is ',
+  WELCOME_REMINDER_COUNT: 'Welcome to the Take My Meds Skill.  The number of your reminders related to this skill is ',
   NO_REMINDER: 'OK, I won\'t remind you.',
 };
 
@@ -594,7 +594,7 @@ const SetReminderAsCompleteHandler = {
           // ConditionExpression: '#a < :MAX',
           ExpressionAttributeNames: {'#t': 'TYPE'},
           ExpressionAttributeValues: {
-            ':x' : isEarly ? 0 : 1
+            ':x' : isEarly ? 1 : 0
           }
         };
         
@@ -625,27 +625,43 @@ const SetReminderAsCompleteHandler = {
   }
 };
 
-function getLastWeek() {
-  var today = new Date();
-  var lastWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
-  return lastWeek;
+/**
+ * Returns 'yyyy-mm-dd' of Monday and Sunday for a given past week
+ * @param {*} week 
+ */
+function getPastWeekDateString(week, duration) {
+  
+  let dateStrings = Array();
+  let today = new Date();
+  let lastWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((week)*7));
+  let first = lastWeek.getDate() - lastWeek.getDay() +1; // assuming first day of the week is Monday
+  let last = first + duration*6; // last day is the first day + 6
+  let weekMonth = lastWeek.getMonth() + 1;
+  let year = lastWeek.getFullYear();
+  let startDateString = ("0000" + year.toString()).slice(-4) + "-" + ("00" + weekMonth.toString()).slice(-2) + "-" + ("00" + first.toString()).slice(-2);
+  let endDateString = ("0000" + year.toString()).slice(-4) + "-" + ("00" + weekMonth.toString()).slice(-2) + "-" + ("00" + last.toString()).slice(-2);
+
+  dateStrings.push(startDateString);
+  dateStrings.push(endDateString);
+
+  return dateStrings;
 }
 
 /**
  * Called by GetWeekSummaryHandler
  * @param {*} userId 
+ * @param {*} startWeek // how many weeks ago
+ * @param {*} numberOfWeeks  // how many weeks from starting week
  */
-async function getPreviousWeekHistoryFromDB(userId) {
+async function getPreviousWeekHistoryFromDB(userId, startWeek, numberOfWeeks) {
 
     // get previous week dates (Monday and Sunday)
-    let lastWeek = getLastWeek();
-    let first = lastWeek.getDate() - lastWeek.getDay() +1; // assuming first day of the week is Monday
-    let last = first + 6; // last day is the first day + 6
-    let weekMonth = lastWeek.getMonth() + 1;
-    let year = lastWeek.getFullYear();
+    let lastWeek = getPastWeekDateString(startWeek, numberOfWeeks); // get dateStrings (Monday, Sunday) for the previous week, up to a week
 
-    let dateOfFirstDayOfThePreviousWeek = ("0000" + year.toString()).slice(-4) + "-" + ("00" + weekMonth.toString()).slice(-2) + "-" + ("00" + first.toString()).slice(-2);
-    let dateOfLastDateOfThePreviousWeek = ("0000" + year.toString()).slice(-4) + "-" + ("00" + weekMonth.toString()).slice(-2) + "-" + ("00" + last.toString()).slice(-2);
+    let dateOfFirstDayOfThePreviousWeek = lastWeek[0];
+    let dateOfLastDateOfThePreviousWeek = lastWeek[1];
+    let remindersStatus = Array();
+
 
     // for current user, check if there is a reminder with SCHEDULED_DATE === dateString. 
     var params = {
@@ -666,18 +682,18 @@ async function getPreviousWeekHistoryFromDB(userId) {
       // ProjectionExpression: 'CUSTOMER_NAME'
     };
 
-    let prompt = ``;
+    
     // Call DynamoDB to read the item from the table
     return new Promise((resolve, reject) => {
       docClient.query(params, function(err, data) {
         if (err) {
           console.log("Error", err);
+          // resolve(`Unable to connect. Please try again`);
         } else {
           if (data.Items.length > 0) {
             console.log("found data");
             console.log(JSON.stringify(data));
   
-            prompt = `You had ${data.Items.length} reminders last week. `;
             let forgotten = 0
             let rememberedBeforeReminder = 0;
             let rememberedAfterReminder = 0;
@@ -685,53 +701,24 @@ async function getPreviousWeekHistoryFromDB(userId) {
             for (let i = 0; i < data.Items.length; i++) {
               if (data.Items[i].TYPE == -1) {
                 forgotten++;
-              } else if (data.Items[i].TYPE == 0) {
-                rememberedBeforeReminder++;
               } else if (data.Items[i].TYPE == 1) {
+                rememberedBeforeReminder++;
+              } else if (data.Items[i].TYPE == 0) {
                 rememberedAfterReminder++;
               }
             }
-  
-            prompt += `You took your medicines before being reminded ${rememberedBeforeReminder} times. You had to be reminded ${rememberedAfterReminder} times. You forgot to take your medicines ${forgotten} times.`
-            
-            // // Check if current time is earlier, compared to SCHEDULED_TIME
-            // const scheduledTime = data.Items[0].SCHEDULED_TIME;
-            // const currentDate = new Date();
-            // const currentTime = `${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}`;
-  
-            // // Credits: https://stackoverflow.com/questions/6212305/how-can-i-compare-two-time-strings-in-the-format-hhmmss
-            // let isEarly = Date.parse(`01/01/2011 ${scheduledTime}`) > Date.parse(`01/01/2011 ${currentTime}`); // the date is arbitrary
-  
-            // // data.Items[0].TYPE = 1;
-            // // update
-            
-            // params = {
-            //   TableName: TABLE_NAME,
-            //   Key: { "USER_ID" : userId, "SCHEDULED_DATE": date },
-            //   UpdateExpression: 'set #t = :x',
-            //   // ConditionExpression: '#a < :MAX',
-            //   ExpressionAttributeNames: {'#t': 'TYPE'},
-            //   ExpressionAttributeValues: {
-            //     ':x' : isEarly ? 0 : 1
-            //   }
-            // };
-            
-            // docClient.update(params, function(err, data) {
-            //     if (err) {
-            //     console.log(`Failed to update db`);
-            //     console.log(err);
-            //     }
-            //     else {
-            //     console.log(`db updated successfully. returned data:`);
-            //     console.log(data);
-            //     }
-            // });
 
-            resolve(prompt);
+            
+            remindersStatus.push(forgotten); // -1
+            remindersStatus.push(rememberedAfterReminder); // 0
+            remindersStatus.push(rememberedBeforeReminder); // 1
+
+            resolve(remindersStatus);
   
           } else {
             console.log(`no reminders were scheduled for today, cannot set any reminder to completed!`);
-            resolve(`no reminders were scheduled for today, cannot set any reminder to completed!`);
+            // resolve(`no reminders were scheduled for today, cannot set any reminder to completed!`);
+            resolve(remindersStatus);
             // return responseBuilder
             // .speak(`No reminders were scheduled for the previous week!`)
             // .getResponse();
@@ -739,6 +726,115 @@ async function getPreviousWeekHistoryFromDB(userId) {
         }
       });
     });
+
+}
+
+/**
+ * Get previous month history from the database
+ * @param {*} userId 
+ */
+async function getPreviousMonthHistoryFromDB(userId) {
+
+  // get previous week dates (Monday and Sunday)
+  let dateStrings = getPastWeekDateString(4, 4); // get dateStrings (Monday, Sunday) for the past 4 weeks
+
+  let startDateString = dateStrings[0];
+  let endDateString = dateStrings[1];
+
+
+
+  // for current user, check if there is a reminder with SCHEDULED_DATE === dateString. 
+  var params = {
+    TableName: TABLE_NAME,
+    // Key: {
+    //   'USER_ID': userId
+    // },
+    KeyConditionExpression: '#user_id = :user_id and #scheduled_date between :startWeekDate and :endWeekDate',
+    ExpressionAttributeNames: {
+      "#user_id": "USER_ID",
+      "#scheduled_date": "SCHEDULED_DATE"
+    },
+    ExpressionAttributeValues: {
+      ":startWeekDate": startDateString,
+      ":endWeekDate": endDateString,
+      ":user_id": userId
+    }
+    // ProjectionExpression: 'CUSTOMER_NAME'
+  };
+
+  let prompt = ``;
+  // Call DynamoDB to read the item from the table
+  return new Promise((resolve, reject) => {
+    docClient.query(params, function(err, data) {
+      if (err) {
+        console.log("Error", err);
+      } else {
+        if (data.Items.length > 0) {
+          console.log("found data");
+          console.log(JSON.stringify(data));
+
+          prompt = `You had ${data.Items.length} reminders in the past 4 weeks. `;
+          let forgotten = 0
+          let rememberedBeforeReminder = 0;
+          let rememberedAfterReminder = 0;
+
+          for (let i = 0; i < data.Items.length; i++) {
+            if (data.Items[i].TYPE == -1) {
+              forgotten++;
+            } else if (data.Items[i].TYPE == 1) {
+              rememberedBeforeReminder++;
+            } else if (data.Items[i].TYPE == 0) {
+              rememberedAfterReminder++;
+            }
+          }
+
+          prompt += `You took your medicines before being reminded ${rememberedBeforeReminder} times. You had to be reminded ${rememberedAfterReminder} times. You forgot to take your medicines ${forgotten} times.`
+          
+          // // Check if current time is earlier, compared to SCHEDULED_TIME
+          // const scheduledTime = data.Items[0].SCHEDULED_TIME;
+          // const currentDate = new Date();
+          // const currentTime = `${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}`;
+
+          // // Credits: https://stackoverflow.com/questions/6212305/how-can-i-compare-two-time-strings-in-the-format-hhmmss
+          // let isEarly = Date.parse(`01/01/2011 ${scheduledTime}`) > Date.parse(`01/01/2011 ${currentTime}`); // the date is arbitrary
+
+          // // data.Items[0].TYPE = 1;
+          // // update
+          
+          // params = {
+          //   TableName: TABLE_NAME,
+          //   Key: { "USER_ID" : userId, "SCHEDULED_DATE": date },
+          //   UpdateExpression: 'set #t = :x',
+          //   // ConditionExpression: '#a < :MAX',
+          //   ExpressionAttributeNames: {'#t': 'TYPE'},
+          //   ExpressionAttributeValues: {
+          //     ':x' : isEarly ? 0 : 1
+          //   }
+          // };
+          
+          // docClient.update(params, function(err, data) {
+          //     if (err) {
+          //     console.log(`Failed to update db`);
+          //     console.log(err);
+          //     }
+          //     else {
+          //     console.log(`db updated successfully. returned data:`);
+          //     console.log(data);
+          //     }
+          // });
+
+          resolve(prompt);
+
+        } else {
+          console.log(`no reminders were scheduled for today, cannot set any reminder to completed!`);
+          resolve(`no reminders were scheduled for today, cannot set any reminder to completed!`);
+          // return responseBuilder
+          // .speak(`No reminders were scheduled for the previous week!`)
+          // .getResponse();
+        }
+      }
+    });
+  });
 
 }
 
@@ -750,9 +846,34 @@ const GetWeekSummaryHandler = {
   async handle(handlerInput) {
     const responseBuilder = handlerInput.responseBuilder;
     const userId = handlerInput.requestEnvelope.session.user.userId.split(".")[3];
-
-    let prompt = await getPreviousWeekHistoryFromDB(userId);
+    let prompt = ``;
+    let remindersStatus = await getPreviousWeekHistoryFromDB(userId, 1, 1);
     console.log(`Received prompt from getPreviousWeekHistoryFromDB()`);
+
+    const forgotten = remindersStatus[0]; // -1s
+    const rememberedAfterReminder = remindersStatus[1]; // 0s
+    const rememberedBeforeReminder = remindersStatus[2]; // 1s
+    const totalReminders = forgotten + rememberedAfterReminder + rememberedBeforeReminder;
+
+    let remindedPercentage = Math.round((rememberedAfterReminder+forgotten)/totalReminders*100);
+    let rememberedBeforeReminderPercentage = Math.round(rememberedBeforeReminder/totalReminders*100);
+    console.log(`rememberedBeforeReminderPercentage: ${rememberedBeforeReminderPercentage}`);
+
+    let ability = ``;
+    if (rememberedBeforeReminderPercentage < 30) {
+      ability = `very poor`;
+    } else if (rememberedBeforeReminderPercentage >= 30 && rememberedBeforeReminderPercentage < 50) {
+      ability = `poor`;
+    } else if (rememberedBeforeReminderPercentage >= 50 && rememberedBeforeReminderPercentage < 80) {
+      ability = `good`;
+    } else if (rememberedBeforeReminderPercentage >= 80) {
+      ability = `excellent`;
+    }
+
+
+    // prompt += `You took your medicines before being reminded ${rememberedBeforeReminder} times. You had to be reminded ${rememberedAfterReminder} times. You forgot to take your medicines ${forgotten} times.`
+    prompt += `Your ability to take medicine on time is ${ability}. You were reminded for ${remindedPercentage} percent of your reminders`;
+
 
     return responseBuilder
     .speak(prompt)
@@ -760,6 +881,72 @@ const GetWeekSummaryHandler = {
 
   }
 };
+
+const GetDetailedWeekSummaryHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === "IntentRequest"
+    && handlerInput.requestEnvelope.request.intent.name === "GetDetailedWeekSummaryIntent";
+  },
+  async handle(handlerInput) {
+    console.log(`GetDetailedWeekSummaryHandler invoked`);
+    const responseBuilder = handlerInput.responseBuilder;
+    const userId = handlerInput.requestEnvelope.session.user.userId.split(".")[3];
+    let prompt = ``;
+    let remindersStatus = await getPreviousWeekHistoryFromDB(userId, 1, 1);
+    console.log(`Received prompt from getPreviousWeekHistoryFromDB()`);
+
+    const forgotten = remindersStatus[0]; // -1s
+    const rememberedAfterReminder = remindersStatus[1]; // 0s
+    const rememberedBeforeReminder = remindersStatus[2]; // 1s
+    const totalReminders = forgotten + rememberedAfterReminder + rememberedBeforeReminder;
+
+    let remindedPercentage = Math.round((rememberedAfterReminder+forgotten)/totalReminders*100);
+    // let rememberedBeforeReminderPercentage = Math.round(rememberedBeforeReminder/totalReminders*100);
+    // console.log(`rememberedBeforeReminderPercentage: ${rememberedBeforeReminderPercentage}`);
+
+    // let ability = ``;
+    // if (rememberedBeforeReminderPercentage < 30) {
+    //   ability = `very poor`;
+    // } else if (rememberedBeforeReminderPercentage >= 30 && rememberedBeforeReminderPercentage < 50) {
+    //   ability = `poor`;
+    // } else if (rememberedBeforeReminderPercentage >= 50 && rememberedBeforeReminderPercentage < 80) {
+    //   ability = `good`;
+    // } else if (rememberedBeforeReminderPercentage >= 80) {
+    //   ability = `excellent`;
+    // }
+
+    // prompt += `You took your medicines before being reminded ${rememberedBeforeReminder} times. You had to be reminded ${rememberedAfterReminder} times. You forgot to take your medicines ${forgotten} times.`
+    prompt = `You had ${totalReminders} reminders last week. ${forgotten > 0 ? `You forgot ${forgotten}.` : ``} ${rememberedBeforeReminder > 0 ? `You remembered ${rememberedBeforeReminder}`:``}. You were reminded for ${remindedPercentage} percent of your reminders`;
+    console.log(`prompt: ${prompt}`);
+
+
+    return responseBuilder
+    .speak(prompt)
+    .getResponse();
+
+  }
+};
+
+const GetImprovementSummaryHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === "IntentRequest"
+    && handlerInput.requestEnvelope.request.intent.name === "GetImprovementSummaryIntent";
+  },
+  async handle(handlerInput) {
+
+    const responseBuilder = handlerInput.responseBuilder;
+    const userId = handlerInput.requestEnvelope.session.user.userId.split(".")[3];
+
+    let prompt = await getPreviousWeekHistoryFromDB(userId, 1, 1); 
+    console.log(`Received prompt from getPreviousWeekHistoryFromDB()`);
+
+    return responseBuilder
+    .speak(prompt)
+    .getResponse();
+    
+  }
+};
+
 /**
  * Insert all records into database
  */
@@ -822,11 +1009,14 @@ const GetNextReminderHandler = {
       const reminders = allReminders.alerts; // array
 
       // https://stackoverflow.com/questions/10123953/sort-javascript-object-array-by-date
-      const sortedReminders = reminders.sort(function(a,b){
+      let sortedReminders = reminders.sort(function(a,b){
         // Turn your strings into dates, and then subtract them
         // to get a value that is either negative, positive, or zero.
         return new Date(b.trigger.scheduledTime) - new Date(a.trigger.scheduledTime);
       });
+
+      console.log('Sorted reminders:');
+      console.log(JSON.stringify(sortedReminders));
 
       let weekday = new Array(7);
       weekday[0] = "Sunday";
@@ -847,9 +1037,45 @@ const GetNextReminderHandler = {
       //   }
       // };
       // const time = 
+    //   speech = {"outputSpeech": {
+    //     "type": "SSML",
+    //     "ssml": `
+    //     Here is a number <w role='amazon:VBD'>read</w> 
+    //     as a cardinal number: 
+    //     <say-as interpret-as='cardinal'>12345</say-as>. 
+    //     Here is a word spelled out: 
+    //     <say-as interpret-as='spell-out'>hello</say-as>.`
+    // }}
 
-      speech = `Your next reminder is: ${sortedReminders[0].alertInfo.spokenInfo.content[0].text}, on ${day} at ${scheduledDateTime.getTime()}`;
-      // speech = `<speak><say-as interpret-as="date">20190414</speak>`
+    // speech =`
+    //   Here is a number <w role='amazon:VBD'>read</w> 
+    //   as a cardinal number: 
+    //   <say-as interpret-as='cardinal'>12345</say-as>. 
+    //   Here is a word spelled out: 
+    //   <say-as interpret-as='spell-out'>hello</say-as>.`
+
+    
+    let yyyy = scheduledDateTime.getFullYear();
+    let mm = scheduledDateTime.getMonth() +  1;
+    let dd = scheduledDateTime.getDate();
+    let hh = scheduledDateTime.getHours();
+    let min = scheduledDateTime.getMinutes();
+    if(dd<10) 
+    {
+        dd='0'+dd;
+    }
+    if(mm<10) 
+    {
+        mm='0'+mm;
+    }
+    if (min < 10) {
+      min = '0'+min;
+    }
+    
+    
+
+      // speech = `Your next reminder is: ${sortedReminders[0].alertInfo.spokenInfo.content[0].text} on ${day} at ${scheduledDateTime.getTime()}`;
+      speech = `On ${day}, <say-as interpret-as="date">${yyyy}${mm}${dd}</say-as>, at <say-as interpret-as="time">${hh}:${min}</say-as>`;
 
     } catch (error) {
       console.log("ERROR GETTING ALL REMINDERS");
@@ -862,7 +1088,7 @@ const GetNextReminderHandler = {
     // }
     return handlerInput.responseBuilder
     .speak(speech)
-    .reprompt(speech)
+    // .reprompt(speech)
     .getResponse();
 
   }
@@ -1058,6 +1284,8 @@ exports.handler = skillBuilder
     AddNewPillHandler,
     SetReminderAsCompleteHandler,
     GetWeekSummaryHandler,
+    GetDetailedWeekSummaryHandler,
+    GetImprovementSummaryHandler,
     GetNextReminderHandler,
     AddRecurringReminderHandler,
     SessionEndedRequestHandler,
