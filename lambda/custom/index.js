@@ -14,17 +14,17 @@ const TABLE_NAME = "REMINDERS" // dynamoDB table name
 const DB_DAILY_RECURRING_ROWS_LIMIT = 30 // for a daily reminder, these number of rows are inserted
 
 const messages = {
-  WELCOME: 'Welcome to the Take My Meds Skill!  You can say "set a reminder" to set a reminder for a medicine.  What would you like to do?',
+  WELCOME: 'Welcome to the Track My Meds Skill!  You can say "set a reminder" to set a reminder for a medicine.  What would you like to do?',
   WHAT_DO_YOU_WANT: 'What would you like to do?',
   NOTIFY_MISSING_PERMISSIONS: 'Please enable Reminder permissions in the Amazon Alexa app using the card I\'ve sent to your Alexa app.',
   ERROR: 'Uh Oh. Looks like something went wrong.',
   API_FAILURE: 'There was an error with the Reminders API. Please try again',
-  GOODBYE: 'Bye! Thanks for using the Take My Meds Skill!',
+  GOODBYE: 'Bye! Thanks for using the Track My Meds Skill!',
   UNHANDLED: 'This skill doesn\'t support that. Please ask something else.',
   HELP: 'You can use this skill by asking something like: create a reminder?',
   REMINDER_CREATED: 'OK, I will remind you.',
   UNSUPPORTED_DEVICE: 'Sorry, this device doesn\'t support reminders.',
-  WELCOME_REMINDER_COUNT: 'Welcome to the Take My Meds Skill.  The number of your reminders related to this skill is ',
+  WELCOME_REMINDER_COUNT: 'Welcome to the Track My Meds Skill.  The number of your reminders related to this skill is ',
   NO_REMINDER: 'OK, I won\'t remind you.',
 };
 

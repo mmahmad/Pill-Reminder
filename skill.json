@@ -5,9 +5,9 @@
         "en-US": {
           "summary": "A skill to help you keep track of when to take your medication.",
           "examplePhrases": [
-            "Alexa open Pill Reminder"
+            "Alexa open Track My Meds"
           ],
-          "name": "Pill Reminder",
+          "name": "Track My Meds",
           "description": "Create a demo skill to access your reminders."
         }
       },

@@ -1,7 +1,7 @@
 {
     "interactionModel": {
         "languageModel": {
-            "invocationName": "pill reminder",
+            "invocationName": "track my meds",
             "intents": [
                 {
                     "name": "AMAZON.CancelIntent",
