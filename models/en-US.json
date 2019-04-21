@@ -126,6 +126,16 @@
                         "give detailed week summary",
                         "give detailed summary"
                     ]
+                },
+                {
+                    "name": "GetImprovementOverMonthSummaryIntent",
+                    "slots": [],
+                    "samples": [
+                        "improvement over the past month",
+                        "improvement in the past month",
+                        "What is the improvement over the past month",
+                        "How much have I improved over the past month"
+                    ]
                 }
             ],
             "types": [

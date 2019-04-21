@@ -927,18 +927,42 @@ const GetDetailedWeekSummaryHandler = {
   }
 };
 
-const GetImprovementSummaryHandler = {
+const GetImprovementOverMonthSummaryHandler = {
   canHandle(handlerInput) {
     return handlerInput.requestEnvelope.request.type === "IntentRequest"
-    && handlerInput.requestEnvelope.request.intent.name === "GetImprovementSummaryIntent";
+    && handlerInput.requestEnvelope.request.intent.name === "GetImprovementOverMonthSummaryIntent";
   },
   async handle(handlerInput) {
 
     const responseBuilder = handlerInput.responseBuilder;
     const userId = handlerInput.requestEnvelope.session.user.userId.split(".")[3];
 
-    let prompt = await getPreviousWeekHistoryFromDB(userId, 1, 1); 
-    console.log(`Received prompt from getPreviousWeekHistoryFromDB()`);
+    // Get reminders' info from db for each week for the past 4 weeks
+    let arrayPreviousWeek4 = await getPreviousWeekHistoryFromDB(userId, 4, 1); // 4 weeks ago
+    let arrayPreviousWeek1 = await getPreviousWeekHistoryFromDB(userId, 1, 1); // last week
+
+    let prompt = ``;
+    if (arrayPreviousWeek1.length > 0 && arrayPreviousWeek4.length > 0) {
+      // Extract all the forgotten reminders (reminders with TYPE==-1) and calculate their ratio
+      let forgottenRatio4 = arrayPreviousWeek4[0] / (arrayPreviousWeek4[0] + arrayPreviousWeek4[1] + arrayPreviousWeek4[2]);
+      let forgottenRatio1 = arrayPreviousWeek1[0] / (arrayPreviousWeek1[0] + arrayPreviousWeek1[1] + arrayPreviousWeek1[2]);
+
+      // Evaluate week-over-week performance. If ratios decrease, performance increases
+      let absolutePercentageDifference = Math.round(Math.abs((forgottenRatio4-forgottenRatio1)/forgottenRatio4 * 100))
+
+      console.log(`arrayPreviousWeek4: ${arrayPreviousWeek4}, total reminders in week 4: ${(arrayPreviousWeek4[0] + arrayPreviousWeek4[1] + arrayPreviousWeek4[2])}, forgottenRatio4: ${forgottenRatio4}`);
+      console.log(`arrayPreviousWeek1: ${arrayPreviousWeek1}, total reminders in week 1: ${(arrayPreviousWeek1[0] + arrayPreviousWeek1[1] + arrayPreviousWeek1[2])}, forgottenRatio1: ${forgottenRatio1}`);
+      console.log(`absolutePercentageDifference: ${absolutePercentageDifference}`);
+      
+      // Number of forgotten reminders decrease consistently over the past 4 weeks
+      if (forgottenRatio1 < forgottenRatio4) {
+        prompt = `Your ability to remember has improved by ${absolutePercentageDifference} percent in the past month`;
+      } else if (forgottenRatio1 > forgottenRatio4) {
+        prompt = `Your ability to remember has deteriorated by ${absolutePercentageDifference} percent in the past month`;
+      }
+    } else {
+      prompt = `You do not have enough historical data. Please try again next week.`;
+    }
 
     return responseBuilder
     .speak(prompt)
@@ -1285,7 +1309,7 @@ exports.handler = skillBuilder
     SetReminderAsCompleteHandler,
     GetWeekSummaryHandler,
     GetDetailedWeekSummaryHandler,
-    GetImprovementSummaryHandler,
+    GetImprovementOverMonthSummaryHandler,
     GetNextReminderHandler,
     AddRecurringReminderHandler,
     SessionEndedRequestHandler,
