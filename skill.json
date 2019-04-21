@@ -3,11 +3,11 @@
     "publishingInformation": {
       "locales": {
         "en-US": {
-          "summary": "A demo skill to show how the Reminders API works.",
+          "summary": "A skill to help you keep track of when to take your medication.",
           "examplePhrases": [
-            "Alexa open reminders demo"
+            "Alexa open Pill Reminder"
           ],
-          "name": "Reminders Demo",
+          "name": "Pill Reminder",
           "description": "Create a demo skill to access your reminders."
         }
       },
