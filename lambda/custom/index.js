@@ -298,7 +298,7 @@ const AddNewPillHandler = {
 
     // TODO: Implement scenario of reminder(s) for multiple days but non-recurring
 
-    var reminderText = `time to take your ${colorName} pill.`;
+    var reminderText = `time to take ${colorName}.`;
     let dbInsertions = Array();
     
     // try {

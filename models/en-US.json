@@ -24,7 +24,7 @@
                     "slots": [
                         {
                             "name": "Color",
-                            "type": "AMAZON.Color",
+                            "type": "MEDICINE",
                             "samples": [
                                 "{Color}"
                             ]
@@ -210,6 +210,86 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "MEDICINE",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "Plavix"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Nexium"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Lipitor"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Prilosec"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "cipro"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "keflex"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "azithromycin"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "diazepam"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "ibuprofen"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "aspirin"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "paracetamol"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "flagyl"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "tylenol"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "amoxil"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "augmentin"
+                            }
+                        }
+                    ]
                 }
             ]
         },
@@ -224,7 +304,7 @@
                     "slots": [
                         {
                             "name": "Color",
-                            "type": "AMAZON.Color",
+                            "type": "MEDICINE",
                             "confirmationRequired": false,
                             "elicitationRequired": true,
                             "prompts": {
@@ -292,7 +372,7 @@
                 "variations": [
                     {
                         "type": "PlainText",
-                        "value": "Please say the color of the pill"
+                        "value": "Please say the name of the medicine"
                     }
                 ]
             },
@@ -310,11 +390,11 @@
                 "variations": [
                     {
                         "type": "PlainText",
-                        "value": "You have asked to set a reminder to take the {Color} pill at {time}  on {date} . Is that correct?"
+                        "value": "Would you like me to remind you to take {Color} {frequency} at {time} ?"
                     },
                     {
                         "type": "PlainText",
-                        "value": "Would you like me to remind you to take the {Color} pill {frequency} at {time}"
+                        "value": "You have asked to set a reminder to take {Color} at {time} on {date} . Is that correct?"
                     }
                 ]
             },
