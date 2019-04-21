@@ -67,6 +67,8 @@
                         }
                     ],
                     "samples": [
+                        "create a reminder",
+                        "set a reminder",
                         "remind me to take {Color}",
                         "remind me to take {Color} on {date} at {time}",
                         "remind me to take {Color} at {date} at {time}",
