@@ -660,6 +660,7 @@ async function getPreviousWeekHistoryFromDB(userId, startWeek, numberOfWeeks) {
 
     let dateOfFirstDayOfThePreviousWeek = lastWeek[0];
     let dateOfLastDateOfThePreviousWeek = lastWeek[1];
+    console.log(`dateOfFirstDayOfThePreviousWeek: ${dateOfFirstDayOfThePreviousWeek}, ${dateOfLastDateOfThePreviousWeek}: dateOfLastDateOfThePreviousWeek`);
     let remindersStatus = Array();
 
 
@@ -872,7 +873,7 @@ const GetWeekSummaryHandler = {
 
 
     // prompt += `You took your medicines before being reminded ${rememberedBeforeReminder} times. You had to be reminded ${rememberedAfterReminder} times. You forgot to take your medicines ${forgotten} times.`
-    prompt += `Your ability to take medicine on time is ${ability}. You were reminded for ${remindedPercentage} percent of your reminders`;
+    prompt += `Your ability to take medicine on time last week was ${ability}. You were reminded for ${remindedPercentage} percent of your reminders`;
 
 
     return responseBuilder
@@ -962,6 +963,8 @@ const GetImprovementOverMonthSummaryHandler = {
       }
     } else {
       prompt = `You do not have enough historical data. Please try again next week.`;
+      console.log('arrayPreviousWeek1.length: ' + arrayPreviousWeek1.length);
+      console.log('arrayPreviousWeek4.length' + arrayPreviousWeek4.length);
     }
 
     return responseBuilder
