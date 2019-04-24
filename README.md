@@ -1,4 +1,4 @@
-Pill Reminder -- Alexa Skill
+Track My Meds -- Alexa Skill
 ============================
 
 1) Follow https://developer.amazon.com/de/docs/smapi/manage-credentials-with-ask-cli.html#create-aws-credentials to set up Alexa CLI credentials
