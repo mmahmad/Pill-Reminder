@@ -1,6 +1,13 @@
 Track My Meds -- Alexa Skill
 ============================
 
+Demo
+----
+
+<a href="https://youtu.be/MVaXWCp2QFI">YouTube</a>
+
+Development
+-----------
 1) Follow https://developer.amazon.com/de/docs/smapi/manage-credentials-with-ask-cli.html#create-aws-credentials to set up Alexa CLI credentials
 2) https://developer.amazon.com/de/docs/smapi/quick-start-alexa-skills-kit-command-line-interface.html#install-initialize
 
